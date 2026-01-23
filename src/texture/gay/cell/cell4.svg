@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+	<!-- celldown.svg -->
+	<rect x="0" y="0" width="160" height="160" fill="#1e262e" />
+	<rect x="10" y="10" width="150" height="150" fill="#384048" />
+
+    <mask id="mmask">
+        <polygon points="55,30 30,80 30,90 90,90 90,130 120,130 120,90 130,90 130,70 120,70 120,30 90,30 90,70 65,70 85,30" fill="#ffffff" />
+    </mask>
+
+    <rect x="0" y="30" width="160" height="25" mask="url(#mmask)" fill="#fef439" />
+    <rect x="0" y="55" width="160" height="25" mask="url(#mmask)" fill="#ffffff"/>
+    <rect x="0" y="80" width="160" height="25" mask="url(#mmask)" fill="#9d5ed0"/>
+    <rect x="0" y="105" width="160" height="25" mask="url(#mmask)" fill="#080808"/>
+</svg>

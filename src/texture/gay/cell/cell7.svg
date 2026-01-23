@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone="yes"?>
+<svg width="160" height="160" xmlns="http://www.w3.org/2000/svg">
+	<!-- celldown.svg -->
+	<rect x="0" y="0" width="160" height="160" fill="#1e262e" />
+	<rect x="10" y="10" width="150" height="150" fill="#384048" />
+
+    <mask id="mmask">
+        <path d="M 30 30 H 130 V 60 L 95 130 H 65 L 100 60 V 50 H 30" fill="#ffffff"/>
+    </mask>
+
+    <rect x="0" y="30" width="160" height="20" mask="url(#mmask)" fill="#43a747" />
+    <rect x="0" y="50" width="160" height="20" mask="url(#mmask)" fill="#a9d47d"/>
+    <rect x="0" y="70" width="160" height="20" mask="url(#mmask)" fill="#ffffff"/>
+    <rect x="0" y="90" width="160" height="20" mask="url(#mmask)" fill="#ababab"/>
+    <rect x="0" y="110" width="160" height="20" mask="url(#mmask)" fill="#080808"/>
+</svg>

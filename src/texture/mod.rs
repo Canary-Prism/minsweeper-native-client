@@ -1,0 +1,123 @@
+use minsweeper_rs::{Cell, CellState, CellType, GameStatus};
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+pub enum Texture {
+    #[default]
+    Dark,
+    Light,
+    Gay
+}
+
+impl Texture {
+    pub fn get_cell_asset(self, cell: Cell, down: bool) -> &'static [u8] {
+        use Texture::*;
+        match self {
+            Dark => match (cell.cell_state, cell.cell_type) {
+                (CellState::Revealed, CellType::Safe(0)) => include_bytes!("dark/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Safe(1)) => include_bytes!("dark/cell/cell1.svg"),
+                (CellState::Revealed, CellType::Safe(2)) => include_bytes!("dark/cell/cell2.svg"),
+                (CellState::Revealed, CellType::Safe(3)) => include_bytes!("dark/cell/cell3.svg"),
+                (CellState::Revealed, CellType::Safe(4)) => include_bytes!("dark/cell/cell4.svg"),
+                (CellState::Revealed, CellType::Safe(5)) => include_bytes!("dark/cell/cell5.svg"),
+                (CellState::Revealed, CellType::Safe(6)) => include_bytes!("dark/cell/cell6.svg"),
+                (CellState::Revealed, CellType::Safe(7)) => include_bytes!("dark/cell/cell7.svg"),
+                (CellState::Revealed, CellType::Safe(8)) => include_bytes!("dark/cell/cell8.svg"),
+                (CellState::Revealed, CellType::Safe(_)) => unreachable!(),
+                (CellState::Revealed, CellType::Mine) => include_bytes!("dark/cell/blast.svg"),
+                (CellState::Revealed, CellType::Unknown) if down => include_bytes!("dark/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Unknown) => include_bytes!("dark/cell/cellup.svg"),
+
+                (CellState::Unknown, CellType::Mine) => include_bytes!("dark/cell/cellmine.svg"),
+                (CellState::Unknown, _) if down => include_bytes!("dark/cell/celldown.svg"),
+                (CellState::Unknown, _) => include_bytes!("dark/cell/cellup.svg"),
+
+                (CellState::Flagged, CellType::Safe(_)) => include_bytes!("dark/cell/falsemine.svg"),
+                (CellState::Flagged, _) => include_bytes!("dark/cell/cellflag.svg"),
+            }
+            Light => match (cell.cell_state, cell.cell_type) {
+                (CellState::Revealed, CellType::Safe(0)) => include_bytes!("light/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Safe(1)) => include_bytes!("light/cell/cell1.svg"),
+                (CellState::Revealed, CellType::Safe(2)) => include_bytes!("light/cell/cell2.svg"),
+                (CellState::Revealed, CellType::Safe(3)) => include_bytes!("light/cell/cell3.svg"),
+                (CellState::Revealed, CellType::Safe(4)) => include_bytes!("light/cell/cell4.svg"),
+                (CellState::Revealed, CellType::Safe(5)) => include_bytes!("light/cell/cell5.svg"),
+                (CellState::Revealed, CellType::Safe(6)) => include_bytes!("light/cell/cell6.svg"),
+                (CellState::Revealed, CellType::Safe(7)) => include_bytes!("light/cell/cell7.svg"),
+                (CellState::Revealed, CellType::Safe(8)) => include_bytes!("light/cell/cell8.svg"),
+                (CellState::Revealed, CellType::Safe(_)) => unreachable!(),
+                (CellState::Revealed, CellType::Mine) => include_bytes!("light/cell/blast.svg"),
+                (CellState::Revealed, CellType::Unknown) if down => include_bytes!("light/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Unknown) => include_bytes!("light/cell/cellup.svg"),
+
+                (CellState::Unknown, CellType::Mine) => include_bytes!("light/cell/cellmine.svg"),
+                (CellState::Unknown, _) if down => include_bytes!("light/cell/celldown.svg"),
+                (CellState::Unknown, _) => include_bytes!("light/cell/cellup.svg"),
+
+                (CellState::Flagged, CellType::Safe(_)) => include_bytes!("light/cell/falsemine.svg"),
+                (CellState::Flagged, _) => include_bytes!("light/cell/cellflag.svg"),
+            }
+            Gay => match (cell.cell_state, cell.cell_type) {
+                (CellState::Revealed, CellType::Safe(0)) => include_bytes!("gay/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Safe(1)) => include_bytes!("gay/cell/cell1.svg"),
+                (CellState::Revealed, CellType::Safe(2)) => include_bytes!("gay/cell/cell2.svg"),
+                (CellState::Revealed, CellType::Safe(3)) => include_bytes!("gay/cell/cell3.svg"),
+                (CellState::Revealed, CellType::Safe(4)) => include_bytes!("gay/cell/cell4.svg"),
+                (CellState::Revealed, CellType::Safe(5)) => include_bytes!("gay/cell/cell5.svg"),
+                (CellState::Revealed, CellType::Safe(6)) => include_bytes!("gay/cell/cell6.svg"),
+                (CellState::Revealed, CellType::Safe(7)) => include_bytes!("gay/cell/cell7.svg"),
+                (CellState::Revealed, CellType::Safe(8)) => include_bytes!("gay/cell/cell8.svg"),
+                (CellState::Revealed, CellType::Safe(_)) => unreachable!(),
+                (CellState::Revealed, CellType::Mine) => include_bytes!("gay/cell/blast.svg"),
+                (CellState::Revealed, CellType::Unknown) if down => include_bytes!("gay/cell/celldown.svg"),
+                (CellState::Revealed, CellType::Unknown) => include_bytes!("gay/cell/cellup.svg"),
+
+                (CellState::Unknown, CellType::Mine) => include_bytes!("gay/cell/cellmine.svg"),
+                (CellState::Unknown, _) if down => include_bytes!("gay/cell/celldown.svg"),
+                (CellState::Unknown, _) => include_bytes!("gay/cell/cellup.svg"),
+
+                (CellState::Flagged, CellType::Safe(_)) => include_bytes!("gay/cell/falsemine.svg"),
+                (CellState::Flagged, _) => include_bytes!("gay/cell/cellflag.svg"),
+            }
+        }
+    }
+
+    pub fn get_restart_button(self, game_status: GameStatus, down: bool, revealing: bool) -> &'static [u8] {
+        use Texture::*;
+        match self {
+            Dark => if down {
+                include_bytes!("dark/faces/smilefacedown.svg")
+            } else if revealing {
+                include_bytes!("dark/faces/clickface.svg")
+            } else {
+                match game_status {
+                    GameStatus::Playing | GameStatus::Never => include_bytes!("dark/faces/smileface.svg"),
+                    GameStatus::Won => include_bytes!("dark/faces/winface.svg").as_slice(),
+                    GameStatus::Lost => include_bytes!("dark/faces/lostface.svg"),
+                }
+            }
+            Light => if down {
+                include_bytes!("light/faces/smilefacedown.svg")
+            } else if revealing {
+                include_bytes!("light/faces/clickface.svg")
+            } else {
+                match game_status {
+                    GameStatus::Playing | GameStatus::Never => include_bytes!("light/faces/smileface.svg"),
+                    GameStatus::Won => include_bytes!("light/faces/winface.svg"),
+                    GameStatus::Lost => include_bytes!("light/faces/lostface.svg"),
+                }
+            }
+            Gay => if down {
+                include_bytes!("gay/faces/smilefacedown.svg")
+            } else if revealing {
+                include_bytes!("gay/faces/clickface.svg")
+            } else {
+                match game_status {
+                    GameStatus::Playing | GameStatus::Never => include_bytes!("gay/faces/smileface.svg"),
+                    GameStatus::Won => include_bytes!("gay/faces/winface.svg"),
+                    GameStatus::Lost => include_bytes!("gay/faces/lostface.svg"),
+                }
+            }
+        }
+    }
+}
