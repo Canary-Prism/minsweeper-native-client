@@ -1,4 +1,3 @@
-use std::any::{Any, TypeId};
 use crate::texture::Texture;
 use crate::DIRS;
 use derive_more::From;
@@ -119,7 +118,7 @@ impl Settings {
     }
 }
 
-fn menu_label<'a>(content: impl Into<Element<'a, Message>>) -> button::Button<'a, Message> {
+fn menu_label<'a>(content: impl Into<Element<'a, Message>>) -> Button<'a, Message> {
     button(content)
             .on_press(Message::MenuLabel)
             .style(|theme, status| {
@@ -147,7 +146,7 @@ fn menu_label<'a>(content: impl Into<Element<'a, Message>>) -> button::Button<'a
             })
 }
 
-fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<Message>) -> button::Button<'a, Message> {
+fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<Message>) -> Button<'a, Message> {
     button(content)
             .on_press(message.into())
             .style(|theme, status| {
@@ -176,7 +175,7 @@ fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<
             .width(Length::Fill)
 }
 
-fn menu_radio<'a, T: Into<Message> + Copy + Eq>(label: impl Into<String>, value: T, selected: T) -> radio::Radio<'a, Message> {
+fn menu_radio<'a, T: Into<Message> + Copy + Eq>(label: impl Into<String>, value: T, selected: T) -> Radio<'a, Message> {
     radio(label, value, Some(selected), Into::into)
             .width(Length::Fill)
 }
@@ -243,7 +242,7 @@ impl<'de> Deserialize<'de> for SerializableBoardSize {
 
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
-enum KnownSolver {
+pub enum KnownSolver {
     #[default]
     MiaSolver,
     SafeStart,

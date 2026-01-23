@@ -35,10 +35,10 @@ impl Cell {
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::Press(button) => {
+            Message::Press(_button) => {
                 self.pressed = true;
             }
-            Message::Release(button) => {
+            Message::Release(_button) => {
                 self.pressed = false;
             }
             Message::SelfPress(button) => {

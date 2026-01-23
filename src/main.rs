@@ -1,9 +1,7 @@
-use std::rc::Rc;
 use derive_more::From;
 use directories::ProjectDirs;
 use iced::{widget, Element, Subscription};
 use iced_core::{mouse, Event};
-use minsweeper_rs::solver::mia::MiaSolver;
 use std::sync::LazyLock;
 
 mod minsweeper;

@@ -6,7 +6,7 @@ use derive_more::From;
 use iced::widget::{button, container, responsive, row, svg, text, Grid};
 use iced::{widget, Element};
 use iced_core::alignment::{Horizontal, Vertical};
-use iced_core::{mouse, Border, Color, Length, Padding, Size};
+use iced_core::{mouse, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::solver::Solver;
 use minsweeper_rs::{CellType, Minsweeper};
@@ -14,7 +14,6 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::str::FromStr;
-use iced::widget::grid::Sizing;
 
 pub struct MinsweeperGame {
     game: Rc<RefCell<minsweeper_rs::minsweeper::MinsweeperGame<Rc<dyn Solver>>>>,
