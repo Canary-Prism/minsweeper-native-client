@@ -1,8 +1,11 @@
+use std::collections::HashSet;
 use derive_more::From;
 use directories::ProjectDirs;
-use iced::{widget, Element, Subscription};
+use iced::{widget, window, Element, Subscription};
 use iced_core::{mouse, Event};
 use std::sync::LazyLock;
+use iced::widget::{button, text};
+use iced_dialog::dialog;
 
 mod minsweeper;
 mod settings_menu;
@@ -20,20 +23,16 @@ fn main() -> iced::Result {
 
 #[derive(Debug)]
 pub struct State {
-    settings: settings_menu::Settings,
+    settings_menu: settings_menu::SettingsMenu,
     minsweeper: minsweeper::MinsweeperGame,
 }
 
 impl Default for State {
     fn default() -> Self {
-        let settings = settings_menu::Settings::load()
-                .unwrap_or_else(|e| {
-                    eprintln!("failed to load settings: {}", e);
-                    settings_menu::Settings::default()
-                });
+        let settings_menu = settings_menu::SettingsMenu::default();
         Self {
-            minsweeper: make_game(&settings),
-            settings
+            minsweeper: make_game(settings_menu.settings()),
+            settings_menu
         }
     }
 }
@@ -48,16 +47,16 @@ impl State {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::Settings(e) => {
-                self.settings.update(e.clone());
+                self.settings_menu.update(e.clone());
                 use settings_menu::Message::*;
                 match e {
-                    MenuLabel => {}
-                    ChangeSize(_) | ChangeSolver(..) => {
-                        self.minsweeper = make_game(&self.settings)
+                    ChangeSize(_) | ChangeSolver(_) => {
+                        self.minsweeper = make_game(self.settings_menu.settings())
                     }
                     ChangeTexture(texture) => {
                         self.minsweeper.change_textures(texture)
                     }
+                    _ => {}
                 }
             }
             Message::Minsweeper(e) => {
@@ -76,10 +75,29 @@ impl State {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        widget::column![
-            self.settings.view().map(Into::into),
+        let base = widget::column![
+            self.settings_menu.view().map(Into::into),
             self.minsweeper.view().map(Into::into)
-        ].into()
+        ];
+        self.process_dialog(base)
+    }
+
+    pub fn process_dialog<'a>(&self, content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
+        let mut view = content.into();
+        for dialog in self.dialogs() {
+            view = iced_dialog::dialog(true, view, dialog)
+                    .into();
+        }
+        view
+    }
+
+    pub fn dialogs<'a>(&self) -> impl Iterator<Item = Element<'a, Message>> {
+        let mut vec = vec![];
+
+        vec.append(&mut self.settings_menu.dialogs()
+                .map(|e| e.map(Into::into)).collect());
+
+        vec.into_iter()
     }
 }
 

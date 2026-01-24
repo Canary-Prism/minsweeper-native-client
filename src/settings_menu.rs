@@ -1,11 +1,15 @@
 use crate::texture::Texture;
-use crate::DIRS;
+use crate::{settings_menu, DIRS};
 use derive_more::From;
 use iced::widget::*;
-use iced::{Border, Color, Element, Length};
-use iced_aw::menu_bar;
+use iced::{widget, Border, Color, Element, Length};
 use iced_aw::{menu, menu_items};
+use iced_aw::{menu_bar, number_input};
+use iced_dialog::dialog;
 use minsweeper_rs::board::{BoardSize, ConventionalSize};
+use minsweeper_rs::solver::mia::MiaSolver;
+use minsweeper_rs::solver::start::{SafeStart, ZeroStart};
+use minsweeper_rs::solver::Solver;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -15,9 +19,7 @@ use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::LazyLock;
-use minsweeper_rs::solver::mia::MiaSolver;
-use minsweeper_rs::solver::Solver;
-use minsweeper_rs::solver::start::{SafeStart, ZeroStart};
+use iced_core::alignment::Vertical;
 
 static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let folder = DIRS.data_dir();
@@ -46,16 +48,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Clone, Debug, From)]
-pub enum Message {
-    MenuLabel,
-    ChangeSize(BoardSize),
-    ChangeTexture(Texture),
-    ChangeSolver(KnownSolver)
-}
-
 impl Settings {
-
     fn save(&self) -> io::Result<()> {
         let file = File::create(&*SETTINGS_PATH)?;
 
@@ -82,16 +75,67 @@ impl Settings {
     pub fn solver(&self) -> Rc<dyn Solver> {
         self.solver.into()
     }
+}
+
+#[derive(Debug)]
+pub struct SettingsMenu {
+    settings: Settings,
+    custom_size_dialog: bool,
+    custom_width: usize,
+    custom_height: usize,
+    custom_mines: usize,
+}
+
+impl Default for SettingsMenu {
+    fn default() -> Self {
+        Self {
+            settings: Settings::load()
+                    .unwrap_or_else(|e| {
+                        eprintln!("failed to load settings: {}", e);
+                        settings_menu::Settings::default()
+                    }),
+            custom_size_dialog: false,
+            custom_width: 10,
+            custom_height: 10,
+            custom_mines: 10
+        }
+    }
+}
+
+#[derive(Clone, Debug, From)]
+pub enum Message {
+    MenuLabel,
+    ChangeSize(BoardSize),
+    ChangeTexture(Texture),
+    ChangeSolver(KnownSolver),
+    CustomSizeDialog(bool),
+    CustomSizeUpdate(usize, usize, usize)
+}
+
+impl SettingsMenu {
+
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::ChangeSize(size) => self.size = SerializableBoardSize(size),
-            Message::ChangeTexture(texture) => self.texture = texture,
-            Message::ChangeSolver(solver) => self.solver = solver,
-            Message::MenuLabel => {}
+            Message::ChangeSize(size) => {
+                self.custom_size_dialog = false;
+                self.settings.size = SerializableBoardSize(size);
+            },
+            Message::ChangeTexture(texture) => self.settings.texture = texture,
+            Message::ChangeSolver(solver) => self.settings.solver = solver,
+            Message::MenuLabel => {},
+            Message::CustomSizeDialog(value) => self.custom_size_dialog = value,
+            Message::CustomSizeUpdate(width, height, mines) =>  {
+                self.custom_width = width;
+                self.custom_height = height;
+                self.custom_mines = mines;
+            }
         }
 
-        if let Err(e) = self.save() {
+        if let Err(e) = self.settings.save() {
             eprintln!("failed to save settings data: {}", e);
         }
     }
@@ -102,19 +146,60 @@ impl Settings {
                 (menu_button("Beginner", ConventionalSize::Beginner.size())),
                 (menu_button("Intermediate", ConventionalSize::Intermediate.size())),
                 (menu_button("Expert", ConventionalSize::Expert.size())),
-            ).max_width(100.0)),
+                (menu_button("Custom", Message::CustomSizeDialog(true))),
+            ).max_width(100.0)
+            .close_on_item_click(true)),
             (menu_label("Theme"), menu!(
-                (menu_radio("Dark", Texture::Dark, self.texture)),
-                (menu_radio("Light", Texture::Light, self.texture)),
-                (menu_radio("Gay", Texture::Gay, self.texture)),
+                (menu_radio("Dark", Texture::Dark, self.settings.texture)),
+                (menu_radio("Light", Texture::Light, self.settings.texture)),
+                (menu_radio("Gay", Texture::Gay, self.settings.texture)),
             ).max_width(100.0)),
             (menu_label("Solver"), menu!(
-                (menu_radio("MiaSolver", KnownSolver::MiaSolver, self.solver)),
-                (menu_radio("SafeStart", KnownSolver::SafeStart, self.solver)),
-                (menu_radio("ZeroStart", KnownSolver::ZeroStart, self.solver)),
+                (menu_radio("MiaSolver", KnownSolver::MiaSolver, self.settings.solver)),
+                (menu_radio("SafeStart", KnownSolver::SafeStart, self.settings.solver)),
+                (menu_radio("ZeroStart", KnownSolver::ZeroStart, self.settings.solver)),
             ).max_width(100.0)),
-        ).close_on_background_click_global(true)
-                .close_on_item_click_global(true)).into()
+        ).close_on_background_click_global(true))
+                .into()
+    }
+
+    pub fn dialogs<'a>(&self) -> impl Iterator<Item = Element<'a, Message>> {
+        let mut vec = vec![];
+
+        if self.custom_size_dialog {
+            let width = self.custom_width;
+            let height = self.custom_height;
+            let mines = self.custom_mines;
+            vec.push(
+                widget::column![
+                    text!("Custom Size"),
+                    row![
+                        text!("width: "),
+                        number_input(&self.custom_width, 1.., move |width| Message::CustomSizeUpdate(width, height, mines)),
+                    ].align_y(Vertical::Center),
+                    row![
+                        text!("height: "),
+                        number_input(&self.custom_height, 1.., move |height| Message::CustomSizeUpdate(width, height, mines)),
+                    ].align_y(Vertical::Center),
+                    row![
+                        text!("mines: "),
+                        number_input(&self.custom_mines, 1.., move |mines| Message::CustomSizeUpdate(width, height, mines)),
+                    ].align_y(Vertical::Center),
+                    row![
+                        button("Cancel").on_press(Message::CustomSizeDialog(false)),
+                        
+                        match BoardSize::new(width, height, mines) {
+                            Ok(size) => Element::new(button("Done").on_press(Message::ChangeSize(size))),
+                            Err(e) => Element::new(tooltip(button("Done"), tooltip_text(text!("{}", e)), tooltip::Position::FollowCursor))
+                        }
+                    ],
+                ].into()
+            );
+
+        }
+
+
+        vec.into_iter()
     }
 }
 
@@ -178,6 +263,17 @@ fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<
 fn menu_radio<'a, T: Into<Message> + Copy + Eq>(label: impl Into<String>, value: T, selected: T) -> Radio<'a, Message> {
     radio(label, value, Some(selected), Into::into)
             .width(Length::Fill)
+}
+
+fn tooltip_text<'a>(text: impl Into<Text<'a>>) -> Element<'a, Message> {
+    container(text.into().color(Color::WHITE))
+            .padding(10)
+            .style(|theme| {
+                container::rounded_box(theme)
+                        .border(Border::default().rounded(8.0))
+                        .background(Color::from_rgb(0.2, 0.2, 0.2))
+            })
+            .into()
 }
 
 #[derive(Debug)]
