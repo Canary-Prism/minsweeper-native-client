@@ -42,6 +42,7 @@ pub enum Message {
     Restart,
     Cell((Point, cell::Message)),
     MouseRelease(mouse::Button),
+    Repaint,
 }
 
 impl MinsweeperGame {
@@ -101,6 +102,7 @@ impl MinsweeperGame {
                     game.start_with_solver(solver).await
                 }).discard()
             }
+            Message::Repaint => {}
         }
         Task::none()
     }
@@ -142,7 +144,7 @@ impl MinsweeperGame {
 
                     handles_lock.insert(uuid, handle);
 
-                    return task.discard()
+                    return task.map(|_| Message::Repaint)
                 }
             }
             cell::Message::SelfRelease(button) => {
@@ -186,7 +188,7 @@ impl MinsweeperGame {
 
                     handles_lock.insert(uuid, handle);
 
-                    return task.discard()
+                    return task.map(|_| Message::Repaint)
 
                 }
                 cell.pressed = false;
