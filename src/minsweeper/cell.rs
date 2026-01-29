@@ -1,9 +1,10 @@
+use std::fmt::{Debug, Formatter};
 use crate::minsweeper::MinsweeperType;
 use crate::texture::Texture;
 use iced::widget::{mouse_area, svg};
 use iced::{mouse, Element};
 use minsweeper_rs::solver::Operation;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Arc;
 
 pub struct Cell {
@@ -13,7 +14,14 @@ pub struct Cell {
     pub hovering: bool,
     pub pressed: bool,
     pub force: bool,
-    pub revealing: Arc<AtomicBool>
+    pub revealing: Arc<AtomicI32>
+}
+
+impl Debug for Cell {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} hovering: {}, pressed: {}, force: {}, revealing: {:?}",
+               self.point, self.hovering, self.pressed, self.force, self.revealing)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -48,7 +56,7 @@ impl Message {
 impl Cell {
 
     pub fn new(point: minsweeper_rs::board::Point, texture: Texture, game: MinsweeperType) -> Self {
-        Self { game, texture, point, hovering: false, pressed: false, force: false, revealing: Arc::new(AtomicBool::new(false)) }
+        Self { game, texture, point, hovering: false, pressed: false, force: false, revealing: Default::default() }
     }
 
     // pub fn update(&mut self, message: Message) {
@@ -88,7 +96,7 @@ impl Cell {
     // }
 
     pub fn is_down(&self) -> bool {
-        (self.pressed && self.hovering) || self.revealing.load(Ordering::Relaxed)
+        (self.pressed && self.hovering) || self.revealing.load(Ordering::Relaxed) > 0
     }
 
     fn is_armed(&self) -> bool {

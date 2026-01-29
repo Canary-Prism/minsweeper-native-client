@@ -60,6 +60,15 @@ impl State {
                     ChangeTexture(texture) => {
                         self.minsweeper.change_textures(texture)
                     }
+                    Auto(value) => {
+                        self.minsweeper.set_auto(value)
+                    },
+                    FlagChord(value) => {
+                        self.minsweeper.set_flag_chord(value)
+                    }
+                    HoverChord(value) => {
+                        self.minsweeper.set_hover_chord(value)
+                    }
                     _ => {}
                 }
                 task.map(Into::into)
@@ -109,5 +118,5 @@ impl State {
 }
 
 fn make_game(settings: &settings_menu::Settings) -> minsweeper::MinsweeperGame {
-    minsweeper::MinsweeperGame::new(settings.size(), settings.solver(), settings.texture())
+    minsweeper::MinsweeperGame::new(settings.size(), settings.solver(), settings.texture(), settings.auto(), settings.flag_chord(), settings.hover_chord())
 }

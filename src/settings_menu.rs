@@ -33,7 +33,10 @@ static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 pub struct Settings {
     size: SerializableBoardSize,
     texture: Texture,
-    solver: KnownSolver
+    solver: KnownSolver,
+    auto: bool,
+    flag_chord: bool,
+    hover_chord: bool,
 }
 
 impl Default for Settings {
@@ -41,7 +44,10 @@ impl Default for Settings {
         Self {
             size: SerializableBoardSize(ConventionalSize::Beginner.size()),
             texture: Texture::default(),
-            solver: KnownSolver::default()
+            solver: KnownSolver::default(),
+            auto: false,
+            flag_chord: false,
+            hover_chord: false,
         }
     }
 }
@@ -72,6 +78,18 @@ impl Settings {
 
     pub fn solver(&self) -> SolverType {
         self.solver.into()
+    }
+
+    pub fn auto(&self) -> bool {
+        self.auto
+    }
+
+    pub fn flag_chord(&self) -> bool {
+        self.flag_chord
+    }
+
+    pub fn hover_chord(&self) -> bool {
+        self.hover_chord
     }
 }
 
@@ -106,8 +124,15 @@ pub enum Message {
     ChangeSize(BoardSize),
     ChangeTexture(Texture),
     ChangeSolver(KnownSolver),
+    #[from(skip)]
     CustomSizeDialog(bool),
-    CustomSizeUpdate(usize, usize, usize)
+    CustomSizeUpdate(usize, usize, usize),
+    #[from(skip)]
+    Auto(bool),
+    #[from(skip)]
+    FlagChord(bool),
+    #[from(skip)]
+    HoverChord(bool),
 }
 
 impl SettingsMenu {
@@ -130,6 +155,15 @@ impl SettingsMenu {
                 self.custom_width = width;
                 self.custom_height = height;
                 self.custom_mines = mines;
+            },
+            Message::Auto(value) => {
+                self.settings.auto = value;
+            }
+            Message::FlagChord(value) => {
+                self.settings.flag_chord = value;
+            }
+            Message::HoverChord(value) => {
+                self.settings.hover_chord = value;
             }
         }
 
@@ -159,6 +193,11 @@ impl SettingsMenu {
                 (menu_radio("SafeStart", KnownSolver::SafeStart, self.settings.solver)),
                 (menu_radio("ZeroStart", KnownSolver::ZeroStart, self.settings.solver)),
             ).max_width(100.0)),
+            (menu_label("Cheats"), menu!(
+                (menu_checkbox("Auto", Message::Auto, self.settings.auto)),
+                (menu_checkbox("Flag Chord", Message::FlagChord, self.settings.flag_chord)),
+                (menu_checkbox("Hover Chord", Message::HoverChord, self.settings.hover_chord)),
+            ).max_width(150.0)),
         ).close_on_background_click_global(true))
                 .into()
     }
@@ -263,6 +302,13 @@ fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<
 fn menu_radio<'a, T: Into<Message> + Copy + Eq>(label: impl Into<String>, value: T, selected: T) -> Radio<'a, Message> {
     radio(label, value, Some(selected), Into::into)
             .width(Length::Fill)
+}
+
+fn menu_checkbox<'a>(label: impl Into<String> + text::IntoFragment<'a>, f: impl Fn(bool) -> Message + 'a, selected: bool) -> Checkbox<'a, Message> {
+    checkbox(selected)
+            .label(label)
+            .width(Length::Fill)
+            .on_toggle(f)
 }
 
 fn tooltip_text<'a>(text: impl Into<Text<'a>>) -> Element<'a, Message> {

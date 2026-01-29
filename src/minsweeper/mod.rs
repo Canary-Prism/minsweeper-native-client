@@ -10,7 +10,7 @@ use iced_core::{mouse, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::Solver;
-use minsweeper_rs::{CellType, GameStatus};
+use minsweeper_rs::{CellState, CellType, GameStatus};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::Ordering;
@@ -27,6 +27,9 @@ pub struct MinsweeperGame {
     size: BoardSize,
     solver: SolverType,
     texture: Texture,
+    auto: bool,
+    flag_chord: bool,
+    hover_chord: bool,
     cells: grid::Grid<cell::Cell>,
     handles: Arc<Mutex<HashMap<Uuid, futures_util::stream::AbortHandle>>>
 }
@@ -47,7 +50,7 @@ pub enum Message {
 
 impl MinsweeperGame {
 
-    pub fn new(size: BoardSize, solver: SolverType, texture: Texture) -> Self {
+    pub fn new(size: BoardSize, solver: SolverType, texture: Texture, auto: bool, flag_chord: bool, hover_chord: bool) -> Self {
         let game = AsyncMinsweeperGame::new(size,
                                                                       (|| {}) as fn(), (|| {}) as fn());
         let game = Arc::new(game);
@@ -58,6 +61,9 @@ impl MinsweeperGame {
             size,
             solver,
             texture,
+            auto,
+            flag_chord,
+            hover_chord,
             cells,
             handles: Default::default()
         }
@@ -69,6 +75,19 @@ impl MinsweeperGame {
             cell.texture = texture;
         }
     }
+
+    pub fn set_auto(&mut self, auto: bool) {
+        self.auto = auto;
+    }
+
+    pub fn set_flag_chord(&mut self, flag_chord: bool) {
+        self.flag_chord = flag_chord;
+    }
+
+    pub fn set_hover_chord(&mut self, hover_chord: bool) {
+        self.hover_chord = hover_chord;
+    }
+
 
     pub fn points(&self) -> impl Iterator<Item = Point> {
         (0..self.size.height().into())
@@ -110,6 +129,78 @@ impl MinsweeperGame {
         Task::none()
     }
 
+    fn left_click(&self, point: Point) -> Task<Message> {
+        let cell = &self.cells[point];
+        let revealings = if matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
+            self.size.neighbours(point)
+                    .map(|point| self.cells[point].revealing.clone())
+                    .collect()
+        } else {
+            vec![cell.revealing.clone()]
+        };
+
+        for revealing in &revealings {
+            revealing.fetch_add(1, Ordering::Relaxed);
+        }
+
+        let game = self.game.clone();
+        let flag_chord = self.flag_chord;
+
+        let mut handles_lock = self.handles.blocking_lock();
+
+        let (abortable, handle) = futures_util::future::abortable(async move {
+            left_click(game, point, flag_chord).await
+        });
+        let task = Task::future(abortable);
+        let uuid = Uuid::new_v4();
+
+        let handles = self.handles.clone();
+        let task = task.then(move |_| {
+            let handles = handles.clone();
+            let revealings = revealings.clone();
+            Task::future(async move {
+                for revealing in revealings {
+                    revealing.fetch_sub(1, Ordering::Relaxed);
+                }
+                let mut handles = handles.lock().await;
+                handles.remove(&uuid);
+            })
+        });
+
+
+        handles_lock.insert(uuid, handle);
+
+        task.map(|_| Message::Repaint)
+    }
+
+    fn right_click(&self, point: Point) -> Task<Message> {
+        let game = self.game.clone();
+
+        let mut handles_lock = self.handles.blocking_lock();
+
+        let (abortable, handle) = futures_util::future::abortable(async move {
+            right_click(game, point).await
+        });
+        let task = Task::future(abortable);
+        let uuid = Uuid::new_v4();
+
+        let handles = self.handles.clone();
+        let task = task.then(move |_| {
+            let handles = handles.clone();
+            Task::future(async move {
+                let handles = handles.lock().await;
+                let Some(handle) = handles.get(&uuid) else { return };
+                handle.abort();
+            })
+        });
+
+
+        handles_lock.insert(uuid, handle);
+
+        task.map(|_| Message::Repaint)
+    }
+
+
     pub fn update_cell(&mut self, point: Point, message: cell::Message) -> Task<Message> {
         let cell = &mut self.cells[point];
         match message {
@@ -124,75 +215,12 @@ impl MinsweeperGame {
 
                 if matches!(button, mouse::Button::Right) {
                     cell.pressed = false;
-                    let game = self.game.clone();
-
-                    let mut handles_lock = self.handles.blocking_lock();
-
-                    let (abortable, handle) = futures_util::future::abortable(async move {
-                        _ = game.right_click(point).await;
-                    });
-                    let task = Task::future(abortable);
-                    let uuid = Uuid::new_v4();
-
-                    let handles = self.handles.clone();
-                    let task = task.then(move |_| {
-                        let handles = handles.clone();
-                        Task::future(async move {
-                            let handles = handles.lock().await;
-                            let Some(handle) = handles.get(&uuid) else { return };
-                            handle.abort();
-                        })
-                    });
-
-
-                    handles_lock.insert(uuid, handle);
-
-                    return task.map(|_| Message::Repaint)
+                    return self.right_click(point);
                 }
             }
             cell::Message::SelfRelease(button) => {
                 if cell.pressed && matches!(button, mouse::Button::Left) {
-                    // _ = cell.game.borrow_mut().left_click(cell.point);
-                    let revealings = if matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
-                        self.size.neighbours(point)
-                                .map(|point| self.cells[point].revealing.clone())
-                                .collect()
-                    } else {
-                        vec![cell.revealing.clone()]
-                    };
-
-                    for revealing in &revealings {
-                        revealing.store(true, Ordering::Relaxed)
-                    }
-
-                    let game = self.game.clone();
-
-                    let mut handles_lock = self.handles.blocking_lock();
-
-                    let (abortable, handle) = futures_util::future::abortable(async move {
-                        _ = game.left_click(point).await;
-                    });
-                    let task = Task::future(abortable);
-                    let uuid = Uuid::new_v4();
-
-                    let handles = self.handles.clone();
-                    let task = task.then(move |_| {
-                        let handles = handles.clone();
-                        let revealings = revealings.clone();
-                        Task::future(async move {
-                            for revealing in revealings {
-                                revealing.store(false, Ordering::Relaxed)
-                            }
-                            let mut handles = handles.lock().await;
-                            handles.remove(&uuid);
-                        })
-                    });
-
-
-                    handles_lock.insert(uuid, handle);
-
-                    return task.map(|_| Message::Repaint)
-
+                    return self.left_click(point)
                 }
                 cell.pressed = false;
             }
@@ -200,18 +228,24 @@ impl MinsweeperGame {
                 cell.force = value;
             }
             cell::Message::Revealing(value) => {
-                cell.revealing.store(value, Ordering::Relaxed)
+                cell.revealing.fetch_add(if value { 1 } else { -1 }, Ordering::Relaxed);
             }
             cell::Message::Enter => {
-                cell.hovering = true
+                cell.hovering = true;
+                if self.hover_chord && matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(n) if n > 0) {
+                    return self.left_click(point);
+                }
             }
             cell::Message::Exit => {
                 cell.hovering = false
             }
         }
+
+
         if matches!(message, cell::Message::Press(_) | cell::Message::Release(_) | cell::Message::SelfPress(_) | cell::Message::SelfRelease(_) | cell::Message::Enter | cell::Message::Exit) {
             let down = cell.is_down();
-            if matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
+            if (cell.pressed || matches!(message, cell::Message::Press(_) | cell::Message::Release(_) | cell::Message::SelfPress(_) | cell::Message::SelfRelease(_)))
+                    && matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
                 for neighbour in self.size.clone().neighbours(point) {
                     let _ = self.update_cell(neighbour, cell::Message::ForceArmed(down));
                 }
@@ -253,7 +287,27 @@ impl MinsweeperGame {
     fn cell_size(&self, size: Size) -> f32 {
         f32::min(size.width / self.size.width().get() as f32, size.height / self.size.height().get() as f32)
     }
+}
 
+async fn left_click(game: MinsweeperType, point: Point, flag_chord: bool) {
+    let gamestate = game.gamestate().await;
+    if flag_chord
+            && let CellType::Safe(n) = gamestate.board[point].cell_type
+            && n as usize == gamestate.board.size()
+                    .neighbours(point)
+                    .filter(|point| matches!(gamestate.board[*point].cell_type, CellType::Unknown))
+                    .count() {
+        for point in gamestate.board.size()
+                .neighbours(point).filter(|point| matches!(gamestate.board[*point].cell_state, CellState::Unknown)) {
+            right_click(game.clone(), point).await;
+        }
+    }
+
+    _ = game.left_click(point).await;
+}
+
+async fn right_click(game: MinsweeperType, point: Point) {
+    _ = game.right_click(point).await;
 }
 
 impl Drop for MinsweeperGame {
