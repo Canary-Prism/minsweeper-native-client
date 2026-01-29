@@ -10,7 +10,7 @@ use iced_core::{mouse, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::Solver;
-use minsweeper_rs::{CellType, Minsweeper};
+use minsweeper_rs::CellType;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::Ordering;
@@ -47,9 +47,8 @@ pub enum Message {
 impl MinsweeperGame {
 
     pub fn new(size: BoardSize, solver: SolverType, texture: Texture) -> Self {
-        let mut game = AsyncMinsweeperGame::new(size,
+        let game = AsyncMinsweeperGame::new(size,
                                                                       (|| {}) as fn(), (|| {}) as fn());
-        game.start_with_solver(solver.clone());
         let game = Arc::new(game);
         let cells = grid::Grid::new(size.width().get(), size.height().get(),
                                     |point| cell::Cell::new(point, texture, game.clone()));
