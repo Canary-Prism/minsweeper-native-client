@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.0
+- added Auto, Flag Chord, and Hover Chord cheats (Auto doesn't work yet tho)
+
 ## 0.3.1
 - made settings path initialise correctly
 - made click animations only work when playing a game
