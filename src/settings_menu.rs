@@ -1,3 +1,4 @@
+use crate::minsweeper::SolverType;
 use crate::texture::Texture;
 use crate::{settings_menu, DIRS};
 use derive_more::From;
@@ -5,11 +6,10 @@ use iced::widget::*;
 use iced::{widget, Border, Color, Element, Length, Task};
 use iced_aw::{menu, menu_items};
 use iced_aw::{menu_bar, number_input};
-use iced_dialog::dialog;
+use iced_core::alignment::Vertical;
 use minsweeper_rs::board::{BoardSize, ConventionalSize};
 use minsweeper_rs::solver::mia::MiaSolver;
 use minsweeper_rs::solver::start::{SafeStart, ZeroStart};
-use minsweeper_rs::solver::Solver;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -17,10 +17,7 @@ use std::fmt::Formatter;
 use std::fs::{create_dir, File};
 use std::io;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::{Arc, LazyLock};
-use iced_core::alignment::Vertical;
-use crate::minsweeper::SolverType;
 
 static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let folder = DIRS.data_dir();

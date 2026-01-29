@@ -1,8 +1,7 @@
+use minsweeper_rs::board::Point;
 use std::iter::Flatten;
 use std::ops::{Index, IndexMut};
 use std::vec::IntoIter;
-use minsweeper_rs::board::{Board, Point};
-use minsweeper_rs::Cell;
 
 #[derive(Clone, Debug)]
 pub struct Grid<E> {

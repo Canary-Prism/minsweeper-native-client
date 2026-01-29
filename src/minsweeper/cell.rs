@@ -1,14 +1,10 @@
+use crate::minsweeper::MinsweeperType;
 use crate::texture::Texture;
 use iced::widget::{mouse_area, svg};
 use iced::{mouse, Element};
-use minsweeper_rs::minsweeper::MinsweeperGame;
-use minsweeper_rs::Minsweeper;
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use minsweeper_rs::solver::Operation;
 use std::sync::atomic::{AtomicBool, Ordering};
-use minsweeper_rs::solver::{Operation, Solver};
-use crate::minsweeper::MinsweeperType;
+use std::sync::Arc;
 
 pub struct Cell {
     game: MinsweeperType,

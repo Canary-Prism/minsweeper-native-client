@@ -1,12 +1,8 @@
-use std::collections::HashSet;
 use derive_more::From;
 use directories::ProjectDirs;
-use iced::{task, widget, window, Element, Subscription, Task};
+use iced::{widget, Element, Subscription, Task};
 use iced_core::{mouse, Event};
 use std::sync::LazyLock;
-use std::time::Duration;
-use iced::widget::{button, text};
-use iced_dialog::dialog;
 
 mod minsweeper;
 mod settings_menu;
