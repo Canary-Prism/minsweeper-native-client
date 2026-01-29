@@ -22,7 +22,6 @@ fn main() -> iced::Result {
 pub struct State {
     settings_menu: settings_menu::SettingsMenu,
     minsweeper: minsweeper::MinsweeperGame,
-    handles: Vec<futures_util::stream::AbortHandle>,
 }
 
 impl Default for State {
@@ -31,7 +30,6 @@ impl Default for State {
         Self {
             minsweeper: make_game(settings_menu.settings()),
             settings_menu,
-            handles: vec![]
         }
     }
 }
@@ -66,9 +64,6 @@ impl State {
         }
     }
 
-    async fn mewo() {
-        println!("mewo");
-    }
 
     fn subscriptions(&self) -> Subscription<Message> {
         iced::event::listen()
