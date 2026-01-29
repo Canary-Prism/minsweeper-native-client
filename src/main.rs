@@ -13,7 +13,7 @@ static DIRS: LazyLock<ProjectDirs> = LazyLock::new(||
                 .expect("couldn't obtain project directories"));
 
 fn main() -> iced::Result {
-    iced::application(State::default, State::update, State::view)
+    iced::application(State::init, State::update, State::view)
             .subscription(State::subscriptions)
             .run()
 }
@@ -41,6 +41,11 @@ pub enum Message {
 }
 
 impl State {
+
+    pub fn init() -> (Self, Task<Message>) {
+        (Self::default(), Task::done(minsweeper::Message::Restart).map(Into::into))
+    }
+
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Settings(e) => {
@@ -48,7 +53,9 @@ impl State {
                 use settings_menu::Message::*;
                 match e {
                     ChangeSize(_) | ChangeSolver(_) => {
-                        self.minsweeper = make_game(self.settings_menu.settings())
+                        self.minsweeper = make_game(self.settings_menu.settings());
+                        return Task::done(minsweeper::Message::Restart)
+                                .map(Into::into)
                     }
                     ChangeTexture(texture) => {
                         self.minsweeper.change_textures(texture)
