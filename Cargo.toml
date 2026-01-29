@@ -10,7 +10,7 @@ repository = "https://github.com/Canary-Prism/minsweeper-native-client"
 license = "Apache-2.0"
 
 [dependencies]
-minsweeper-rs = { version = "1.2.4", features = ["async"] }
+minsweeper-rs = { version = "1.2.4", features = ["async", "tokio"] }
 iced = { version = "0.14.0", features = ["svg", "tokio"] }
 iced_core = "0.14.0"
 iced_aw = { version = "0.13.0", features = ["menu"] }
