@@ -10,7 +10,7 @@ use iced_core::{mouse, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::Solver;
-use minsweeper_rs::CellType;
+use minsweeper_rs::{CellType, GameStatus};
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::Ordering;
@@ -79,6 +79,9 @@ impl MinsweeperGame {
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Cell((point, e)) => {
+                if self.game.blocking_gamestate().status != GameStatus::Playing {
+                    return Task::none();
+                }
                 // self.cells[point].update(e.clone());
                 let task = self.update_cell(point, e);
                 // if matches!(e, cell::Message::SelfRelease(_) | cell::Message::SelfPress(_)) {
