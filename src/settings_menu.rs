@@ -14,7 +14,7 @@ use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Formatter;
-use std::fs::{create_dir, File};
+use std::fs::{create_dir_all, File};
 use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
@@ -22,7 +22,7 @@ use std::sync::{Arc, LazyLock};
 static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let folder = DIRS.data_dir();
     if !folder.is_dir() {
-        create_dir(folder)
+        create_dir_all(folder)
                 .unwrap_or_else(|_| panic!("failed to create directory {:?}", folder))
     }
 
