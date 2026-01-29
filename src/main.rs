@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 use derive_more::From;
 use directories::ProjectDirs;
-use iced::{widget, window, Element, Subscription};
+use iced::{task, widget, window, Element, Subscription, Task};
 use iced_core::{mouse, Event};
 use std::sync::LazyLock;
+use std::time::Duration;
 use iced::widget::{button, text};
 use iced_dialog::dialog;
 
@@ -25,6 +26,7 @@ fn main() -> iced::Result {
 pub struct State {
     settings_menu: settings_menu::SettingsMenu,
     minsweeper: minsweeper::MinsweeperGame,
+    handles: Vec<futures_util::stream::AbortHandle>,
 }
 
 impl Default for State {
@@ -32,7 +34,8 @@ impl Default for State {
         let settings_menu = settings_menu::SettingsMenu::default();
         Self {
             minsweeper: make_game(settings_menu.settings()),
-            settings_menu
+            settings_menu,
+            handles: vec![]
         }
     }
 }
@@ -40,14 +43,14 @@ impl Default for State {
 #[derive(Clone, Debug, From)]
 pub enum Message {
     Settings(settings_menu::Message),
-    Minsweeper(minsweeper::Message)
+    Minsweeper(minsweeper::Message),
 }
 
 impl State {
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Settings(e) => {
-                self.settings_menu.update(e.clone());
+                let task = self.settings_menu.update(e.clone());
                 use settings_menu::Message::*;
                 match e {
                     ChangeSize(_) | ChangeSolver(_) => {
@@ -58,11 +61,17 @@ impl State {
                     }
                     _ => {}
                 }
+                task.map(Into::into)
             }
             Message::Minsweeper(e) => {
                 self.minsweeper.update(e)
+                        .map(Into::into)
             }
         }
+    }
+
+    async fn mewo() {
+        println!("mewo");
     }
 
     fn subscriptions(&self) -> Subscription<Message> {
@@ -77,7 +86,7 @@ impl State {
     pub fn view(&self) -> Element<'_, Message> {
         let base = widget::column![
             self.settings_menu.view().map(Into::into),
-            self.minsweeper.view().map(Into::into)
+            self.minsweeper.view().map(Into::into),
         ];
         self.process_dialog(base)
     }

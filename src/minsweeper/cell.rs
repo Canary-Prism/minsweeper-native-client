@@ -5,15 +5,19 @@ use minsweeper_rs::minsweeper::MinsweeperGame;
 use minsweeper_rs::Minsweeper;
 use std::cell::RefCell;
 use std::rc::Rc;
-use minsweeper_rs::solver::Solver;
+use std::sync::{Arc, RwLock};
+use std::sync::atomic::{AtomicBool, Ordering};
+use minsweeper_rs::solver::{Operation, Solver};
+use crate::minsweeper::MinsweeperType;
 
 pub struct Cell {
-    game: Rc<RefCell<MinsweeperGame<Rc<dyn Solver>>>>,
+    game: MinsweeperType,
     pub texture: Texture,
     point: minsweeper_rs::board::Point,
-    hovering: bool,
-    pressed: bool,
-    force: bool
+    pub hovering: bool,
+    pub pressed: bool,
+    pub force: bool,
+    pub revealing: Arc<AtomicBool>
 }
 
 #[derive(Clone, Debug)]
@@ -23,51 +27,72 @@ pub enum Message {
     SelfPress(mouse::Button),
     SelfRelease(mouse::Button),
     ForceArmed(bool),
+    Revealing(bool),
     Enter,
     Exit
 }
 
-impl Cell {
-
-    pub fn new(point: minsweeper_rs::board::Point, texture: Texture, game: Rc<RefCell<MinsweeperGame<Rc<dyn Solver>>>>) -> Self {
-        Self { game, texture, point, hovering: false, pressed: false, force: false }
-    }
-
-    pub fn update(&mut self, message: Message) {
-        match message {
-            Message::Press(_button) => {
-                self.pressed = true;
-            }
-            Message::Release(_button) => {
-                self.pressed = false;
-            }
-            Message::SelfPress(button) => {
-                self.pressed = true;
-                if matches!(button, mouse::Button::Right) {
-                    _ = self.game.borrow_mut().right_click(self.point);
-                    self.pressed = false;
-                }
-            }
-            Message::SelfRelease(button) => {
-                if self.pressed && matches!(button, mouse::Button::Left) {
-                    _ = self.game.borrow_mut().left_click(self.point);
-                }
-                self.pressed = false;
-            }
-            Message::ForceArmed(value) => {
-                self.force = value;
-            }
-            Message::Enter => {
-                self.hovering = true
-            }
-            Message::Exit => {
-                self.hovering = false
-            }
+impl Message {
+    pub fn to_action(&self) -> Option<Vec<Operation>> {
+        match self {
+            Message::SelfPress(mouse::Button::Right) => Some(vec![Operation::Flag]),
+            Message::SelfRelease(mouse::Button::Left) => Some(vec![Operation::Reveal, Operation::Chord]),
+            _ => None
         }
     }
 
+    pub fn is_left_click(&self) -> bool {
+        matches!(self, Message::SelfRelease(mouse::Button::Left))
+    }
+    pub fn is_right_click(&self) -> bool {
+        matches!(self, Message::SelfPress(mouse::Button::Right))
+    }
+}
+
+impl Cell {
+
+    pub fn new(point: minsweeper_rs::board::Point, texture: Texture, game: MinsweeperType) -> Self {
+        Self { game, texture, point, hovering: false, pressed: false, force: false, revealing: Arc::new(AtomicBool::new(false)) }
+    }
+
+    // pub fn update(&mut self, message: Message) {
+    //     match message {
+    //         Message::Press(_button) => {
+    //             self.pressed = true;
+    //         }
+    //         Message::Release(_button) => {
+    //             self.pressed = false;
+    //         }
+    //         Message::SelfPress(button) => {
+    //             self.pressed = true;
+    //             if matches!(button, mouse::Button::Right) {
+    //                 // _ = self.game.borrow_mut().right_click(self.point);
+    //                 self.pressed = false;
+    //             }
+    //         }
+    //         Message::SelfRelease(button) => {
+    //             if self.pressed && matches!(button, mouse::Button::Left) {
+    //                 // _ = self.game.borrow_mut().left_click(self.point);
+    //             }
+    //             self.pressed = false;
+    //         }
+    //         Message::ForceArmed(value) => {
+    //             self.force = value;
+    //         }
+    //         Message::Revealing(value) => {
+    //             self.revealing.store(value, Ordering::Relaxed)
+    //         }
+    //         Message::Enter => {
+    //             self.hovering = true
+    //         }
+    //         Message::Exit => {
+    //             self.hovering = false
+    //         }
+    //     }
+    // }
+
     pub fn is_down(&self) -> bool {
-        self.pressed && self.hovering
+        (self.pressed && self.hovering) || self.revealing.load(Ordering::Relaxed)
     }
 
     fn is_armed(&self) -> bool {
@@ -80,7 +105,7 @@ impl Cell {
 
     pub fn view(&self) -> Element<'_, Message> {
         mouse_area(svg(svg::Handle::from_memory(
-            self.texture.get_cell_asset(self.game.borrow().gamestate().board[self.point], self.is_armed()))))
+            self.texture.get_cell_asset(self.game.blocking_gamestate().board[self.point], self.is_armed()))))
                 .on_press(Message::Press(mouse::Button::Left))
                 .on_middle_press(Message::SelfPress(mouse::Button::Middle))
                 .on_right_press(Message::SelfPress(mouse::Button::Right))

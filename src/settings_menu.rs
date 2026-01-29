@@ -2,7 +2,7 @@ use crate::texture::Texture;
 use crate::{settings_menu, DIRS};
 use derive_more::From;
 use iced::widget::*;
-use iced::{widget, Border, Color, Element, Length};
+use iced::{widget, Border, Color, Element, Length, Task};
 use iced_aw::{menu, menu_items};
 use iced_aw::{menu_bar, number_input};
 use iced_dialog::dialog;
@@ -18,8 +18,9 @@ use std::fs::{create_dir, File};
 use std::io;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use iced_core::alignment::Vertical;
+use crate::minsweeper::SolverType;
 
 static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let folder = DIRS.data_dir();
@@ -72,7 +73,7 @@ impl Settings {
         self.texture
     }
 
-    pub fn solver(&self) -> Rc<dyn Solver> {
+    pub fn solver(&self) -> SolverType {
         self.solver.into()
     }
 }
@@ -118,7 +119,7 @@ impl SettingsMenu {
         &self.settings
     }
 
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::ChangeSize(size) => {
                 self.custom_size_dialog = false;
@@ -138,6 +139,8 @@ impl SettingsMenu {
         if let Err(e) = self.settings.save() {
             eprintln!("failed to save settings data: {}", e);
         }
+        
+        Task::none()
     }
 
     pub fn view(&self) -> Element<'_, Message> {
@@ -345,12 +348,12 @@ pub enum KnownSolver {
     ZeroStart
 }
 
-impl From<KnownSolver> for Rc<dyn Solver> {
+impl From<KnownSolver> for SolverType {
     fn from(value: KnownSolver) -> Self {
         match value {
-            KnownSolver::MiaSolver => Rc::new(MiaSolver),
-            KnownSolver::SafeStart => Rc::new(SafeStart),
-            KnownSolver::ZeroStart => Rc::new(ZeroStart)
+            KnownSolver::MiaSolver => Arc::new(MiaSolver),
+            KnownSolver::SafeStart => Arc::new(SafeStart),
+            KnownSolver::ZeroStart => Arc::new(ZeroStart)
         }
     }
 }

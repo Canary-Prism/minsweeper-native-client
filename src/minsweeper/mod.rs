@@ -4,23 +4,37 @@ mod grid;
 use crate::texture::Texture;
 use derive_more::From;
 use iced::widget::{button, container, responsive, row, svg, text, Grid};
-use iced::{widget, Element};
+use iced::{widget, Element, Task};
 use iced_core::alignment::{Horizontal, Vertical};
 use iced_core::{mouse, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::solver::Solver;
 use minsweeper_rs::{CellType, Minsweeper};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
-use std::str::FromStr;
+use std::sync::atomic::Ordering;
+use std::sync::{Arc};
+use std::time::Duration;
+use iced::futures::task;
+use iced::task::Handle;
+use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
+use minsweeper_rs::solver::mia::MiaSolver;
+use tokio::sync::{Mutex, RwLock};
+use uuid::Uuid;
+
+pub type MinsweeperType = Arc<AsyncMinsweeperGame<SolverType, FnType, FnType>>;
+pub type SolverType = Arc<dyn Solver + Send + Sync>;
+pub type FnType = fn();
 
 pub struct MinsweeperGame {
-    game: Rc<RefCell<minsweeper_rs::minsweeper::MinsweeperGame<Rc<dyn Solver>>>>,
+    game: MinsweeperType,
     size: BoardSize,
-    solver: Rc<dyn Solver>,
+    solver: SolverType,
     texture: Texture,
-    cells: grid::Grid<cell::Cell>
+    cells: grid::Grid<cell::Cell>,
+    handles: Arc<Mutex<HashMap<Uuid, futures_util::stream::AbortHandle>>>
 }
 
 impl Debug for MinsweeperGame {
@@ -33,23 +47,25 @@ impl Debug for MinsweeperGame {
 pub enum Message {
     Restart,
     Cell((Point, cell::Message)),
-    MouseRelease(mouse::Button)
+    MouseRelease(mouse::Button),
 }
 
 impl MinsweeperGame {
 
-    pub fn new(size: BoardSize, solver: Rc<dyn Solver>, texture: Texture) -> Self {
-        let mut game = minsweeper_rs::minsweeper::MinsweeperGame::new(size, Box::new(|| {}), Box::new(|| {}));
+    pub fn new(size: BoardSize, solver: SolverType, texture: Texture) -> Self {
+        let mut game = AsyncMinsweeperGame::new(size,
+                                                                      (|| {}) as fn(), (|| {}) as fn());
         game.start_with_solver(solver.clone());
-        let game = Rc::new(RefCell::new(game));
+        let game = Arc::new(game);
         let cells = grid::Grid::new(size.width().get(), size.height().get(),
-                                    |point | cell::Cell::new(point, texture, game.clone()));
+                                    |point| cell::Cell::new(point, texture, game.clone()));
         Self {
             game,
             size,
             solver,
             texture,
-            cells
+            cells,
+            handles: Default::default()
         }
     }
 
@@ -66,28 +82,144 @@ impl MinsweeperGame {
                         .map(move |x| (x, y)))
     }
 
-    pub fn update(&mut self, message: Message) {
+    pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Cell((point, e)) => {
-                self.cells[point].update(e.clone());
+                // self.cells[point].update(e.clone());
+                let task = self.update_cell(point, e);
                 // if matches!(e, cell::Message::SelfRelease(_) | cell::Message::SelfPress(_)) {
                 //
                 // }
-                let down = self.cells[point].is_down();
-                if matches!(Minsweeper::gamestate(&*self.game.borrow())
-                            .board[point].cell_type, CellType::Safe(_)) {
-                    for neighbour in self.size.neighbours(point) {
-                        self.cells[neighbour].update(cell::Message::ForceArmed(down))
-                    }
-                }
+
+                return task
             }
-            Message::MouseRelease(button) => for cell in &mut self.cells {
-                cell.update(cell::Message::Release(button))
+            Message::MouseRelease(button) => for cell in self.size.clone().points() {
+                let _ = self.update_cell(cell, cell::Message::Release(button));
             },
             Message::Restart => {
-                self.game.borrow_mut().start_with_solver(self.solver.clone());
+                for (_, handle) in self.handles.blocking_lock().iter() {
+                    handle.abort();
+                }
+                self.handles.blocking_lock().clear();
+
+                let game = self.game.clone();
+                let solver = self.solver.clone();
+                return Task::future(async move {
+                    game.start_with_solver(solver).await
+                }).discard()
             }
         }
+        Task::none()
+    }
+
+    pub fn update_cell(&mut self, point: Point, message: cell::Message) -> Task<Message> {
+        let cell = &mut self.cells[point];
+        match message {
+            cell::Message::Press(_button) => {
+                cell.pressed = true;
+            }
+            cell::Message::Release(_button) => {
+                cell.pressed = false;
+            }
+            cell::Message::SelfPress(button) => {
+                cell.pressed = true;
+
+                if matches!(button, mouse::Button::Right) {
+                    cell.pressed = false;
+                    let game = self.game.clone();
+
+                    let mut handles_lock = self.handles.blocking_lock();
+
+                    let (abortable, handle) = futures_util::future::abortable(async move {
+                        _ = game.right_click(point).await;
+                    });
+                    let task = Task::future(abortable);
+                    let uuid = Uuid::new_v4();
+
+                    let handles = self.handles.clone();
+                    let task = task.then(move |_| {
+                        let handles = handles.clone();
+                        Task::future(async move {
+                            let handles = handles.lock().await;
+                            let Some(handle) = handles.get(&uuid) else { return };
+                            handle.abort();
+                        })
+                    });
+
+
+                    handles_lock.insert(uuid, handle);
+
+                    return task.discard()
+                }
+            }
+            cell::Message::SelfRelease(button) => {
+                if cell.pressed && matches!(button, mouse::Button::Left) {
+                    // _ = cell.game.borrow_mut().left_click(cell.point);
+                    let revealings = if matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
+                        self.size.neighbours(point)
+                                .map(|point| self.cells[point].revealing.clone())
+                                .collect()
+                    } else {
+                        vec![cell.revealing.clone()]
+                    };
+
+                    for revealing in &revealings {
+                        revealing.store(true, Ordering::Relaxed)
+                    }
+
+                    let game = self.game.clone();
+
+                    let mut handles_lock = self.handles.blocking_lock();
+
+                    let (abortable, handle) = futures_util::future::abortable(async move {
+                        _ = game.left_click(point).await;
+                    });
+                    let task = Task::future(abortable);
+                    let uuid = Uuid::new_v4();
+
+                    let handles = self.handles.clone();
+                    let task = task.then(move |_| {
+                        let handles = handles.clone();
+                        let revealings = revealings.clone();
+                        Task::future(async move {
+                            for revealing in revealings {
+                                revealing.store(false, Ordering::Relaxed)
+                            }
+                            let mut handles = handles.lock().await;
+                            handles.remove(&uuid);
+                        })
+                    });
+
+
+                    handles_lock.insert(uuid, handle);
+
+                    return task.discard()
+
+                }
+                cell.pressed = false;
+            }
+            cell::Message::ForceArmed(value) => {
+                cell.force = value;
+            }
+            cell::Message::Revealing(value) => {
+                cell.revealing.store(value, Ordering::Relaxed)
+            }
+            cell::Message::Enter => {
+                cell.hovering = true
+            }
+            cell::Message::Exit => {
+                cell.hovering = false
+            }
+        }
+        if matches!(message, cell::Message::Press(_) | cell::Message::Release(_) | cell::Message::SelfPress(_) | cell::Message::SelfRelease(_) | cell::Message::Enter | cell::Message::Exit) {
+            let down = cell.is_down();
+            if matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(_)) {
+                for neighbour in self.size.clone().neighbours(point) {
+                    let _ = self.update_cell(neighbour, cell::Message::ForceArmed(down));
+                }
+            }
+        }
+        Task::none()
     }
 
     // fn subscriptions() -> Subscription<Message> {
@@ -98,10 +230,10 @@ impl MinsweeperGame {
 
         widget::column![
             container(row![
-                container(text!("remaining mines: {}", self.game.borrow().gamestate().remaining_mines))
+                container(text!("remaining mines: {}", self.game.blocking_gamestate().remaining_mines))
                     .padding(Padding::default().horizontal(10)),
                 button(svg(svg::Handle::from_memory(
-                        self.texture.get_restart_button(self.game.borrow().gamestate().status, false, false))))
+                        self.texture.get_restart_button(self.game.blocking_gamestate().status, false, false))))
                     .width(Length::Fixed(70.0))
                     .height(Length::Fixed(70.0))
                     .on_press(Message::Restart)
@@ -124,4 +256,12 @@ impl MinsweeperGame {
         f32::min(size.width / self.size.width().get() as f32, size.height / self.size.height().get() as f32)
     }
 
+}
+
+impl Drop for MinsweeperGame {
+    fn drop(&mut self) {
+        for (_, handle) in self.handles.blocking_lock().iter() {
+            handle.abort();
+        }
+    }
 }
