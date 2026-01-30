@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+- made auto work :3
+- also added the rest of the solvers from minsweeper-client
+
 ## 0.4.0
 - added Auto, Flag Chord, and Hover Chord cheats (Auto doesn't work yet tho)
 
