@@ -1863,9 +1863,9 @@ dependencies = [
 
 [[package]]
 name = "minsweeper-rs"
-version = "1.2.4"
+version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4efbcf0f739103522a36b1e04b38e3fbc857909417ef44b057dfeb9a9f49813"
+checksum = "ea281ff78592b4e11c3ca4c392810e568ed68cbd2e66806c35d4bb7e61cb7174"
 dependencies = [
  "fastrand",
  "tokio",
