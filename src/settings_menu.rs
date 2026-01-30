@@ -8,7 +8,7 @@ use iced_aw::{menu, menu_items};
 use iced_aw::{menu_bar, number_input};
 use iced_core::alignment::Vertical;
 use minsweeper_rs::board::{BoardSize, ConventionalSize};
-use minsweeper_rs::solver::mia::MiaSolver;
+use minsweeper_rs::solver::mia::{Level, MiaSolver};
 use minsweeper_rs::solver::start::{SafeStart, ZeroStart};
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
@@ -189,10 +189,15 @@ impl SettingsMenu {
                 (menu_radio("Gay", Texture::Gay, self.settings.texture)),
             ).max_width(100.0)),
             (menu_label("Solver"), menu!(
-                (menu_radio("MiaSolver", KnownSolver::MiaSolver, self.settings.solver)),
-                (menu_radio("SafeStart", KnownSolver::SafeStart, self.settings.solver)),
-                (menu_radio("ZeroStart", KnownSolver::ZeroStart, self.settings.solver)),
-            ).max_width(100.0)),
+                (menu_radio("Mia Solver", KnownSolver::MiaSolver, self.settings.solver)),
+                (menu_radio("Beginner Solver", KnownSolver::BeginnerSolver, self.settings.solver)),
+                (menu_radio("Intermediate Solver", KnownSolver::IntermediateSolver, self.settings.solver)),
+                (menu_radio("Expert Solver", KnownSolver::ExpertSolver, self.settings.solver)),
+                (menu_radio("Intermediate Only Solver", KnownSolver::IntermediateOnlySolver, self.settings.solver)),
+                (menu_radio("Expert Only Solver", KnownSolver::ExpertOnlySolver, self.settings.solver)),
+                (menu_radio("Safe Start", KnownSolver::SafeStart, self.settings.solver)),
+                (menu_radio("Zero Start", KnownSolver::ZeroStart, self.settings.solver)),
+            ).max_width(200.0)),
             (menu_label("Cheats"), menu!(
                 (menu_checkbox("Auto", Message::Auto, self.settings.auto)),
                 (menu_checkbox("Flag Chord", Message::FlagChord, self.settings.flag_chord)),
@@ -387,6 +392,11 @@ impl<'de> Deserialize<'de> for SerializableBoardSize {
 pub enum KnownSolver {
     #[default]
     MiaSolver,
+    BeginnerSolver,
+    IntermediateSolver,
+    ExpertSolver,
+    IntermediateOnlySolver,
+    ExpertOnlySolver,
     SafeStart,
     ZeroStart
 }
@@ -394,9 +404,14 @@ pub enum KnownSolver {
 impl From<KnownSolver> for SolverType {
     fn from(value: KnownSolver) -> Self {
         match value {
-            KnownSolver::MiaSolver => Arc::new(MiaSolver),
+            KnownSolver::MiaSolver => Arc::new(MiaSolver::default()),
+            KnownSolver::BeginnerSolver => Arc::new(MiaSolver::skill(Level::Beginner)),
+            KnownSolver::IntermediateSolver => Arc::new(MiaSolver::skill(Level::Intermediate)),
+            KnownSolver::ExpertSolver => Arc::new(MiaSolver::skill(Level::Expert)),
+            KnownSolver::IntermediateOnlySolver => Arc::new(MiaSolver::only(Level::Intermediate)),
+            KnownSolver::ExpertOnlySolver => Arc::new(MiaSolver::only(Level::Expert)),
             KnownSolver::SafeStart => Arc::new(SafeStart),
-            KnownSolver::ZeroStart => Arc::new(ZeroStart)
+            KnownSolver::ZeroStart => Arc::new(ZeroStart),
         }
     }
 }
