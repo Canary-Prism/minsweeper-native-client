@@ -4,12 +4,12 @@ mod cell;
 mod grid;
 mod restart;
 
-use crate::texture::Texture;
+use crate::texture::{Border, Texture};
 use derive_more::From;
-use iced::widget::{button, container, responsive, row, svg, text, Grid, Row};
+use iced::widget::{button, container, responsive, row, svg, text, Grid, Row, Svg};
 use iced::{widget, Element, Task};
 use iced_core::alignment::{Horizontal, Vertical};
-use iced_core::{mouse, Background, Border, ContentFit, Length, Padding, Size};
+use iced_core::{mouse, Background, Color, ContentFit, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::{Move, Operation, Solver};
@@ -342,22 +342,37 @@ impl MinsweeperGame {
     pub fn view(&self) -> Element<'_, Message> {
 
         container(widget::column![
-            container(row![
-                container(self.number_display(self.remaining_mines(), self.remaining_mine_digit()))
-                    .padding(Padding::default().horizontal(10)),
-                Element::new(RestartButton::new(self.texture, self.game.blocking_gamestate().status, self.any_revealing(), Message::Restart)),
-            ]).width(Length::Fill).align_x(Horizontal::Center),
-            responsive(|size| container(Grid::from_iter(self.points()
-                .map(|point| (point, &self.cells[point]))
-                .map(|(point, e)| e.view()
-                    .map(move |message| Message::Cell((point, message)))))
-                .columns(self.size.width().get())
-                .width(self.cell_size(size) * self.size.width().get() as f32))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .align_x(Horizontal::Center)
-                .align_y(Vertical::Center)
-                .into())
+            container(
+                row![
+                    self.border(Border::LeftRight)
+                        .height(32),
+                    container(self.number_display(self.remaining_mines(), self.remaining_mine_digit()))
+                        .padding(Padding::default().horizontal(10)),
+                    Element::new(RestartButton::new(self.texture, self.game.blocking_gamestate().status, self.any_revealing(), Message::Restart)),
+                ].align_y(Vertical::Center)
+            ).width(Length::Fill).align_x(Horizontal::Center),
+            responsive(|size|
+                row![
+                    self.border(Border::LeftRight)
+                            .height(size.height),
+                    responsive(|size|
+
+                        container(Grid::from_iter(self.points()
+                            .map(|point| (point, &self.cells[point]))
+                            .map(|(point, e)| e.view()
+                                .map(move |message| Message::Cell((point, message)))))
+                            .columns(self.size.width().get())
+                            .width(self.cell_size(size) * self.size.width().get() as f32))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(Horizontal::Center)
+                        .align_y(Vertical::Center)
+                        .into()),
+                    self.border(Border::LeftRight)
+                            .height(size.height),
+                ].into()
+            ),
+
         ]).style(|_theme| container::Style {
             background: Some(Background::Color(self.texture.get_background_colour())),
             ..Default::default()
@@ -400,6 +415,21 @@ impl MinsweeperGame {
         self.cells
                 .iter()
                 .any(|cell| cell.is_down())
+    }
+
+    fn border(&'_ self, border: Border) -> Svg<'_> {
+        let svg = svg(svg::Handle::from_memory(self.texture.get_border(border)));
+
+        let (width, height) = match border {
+            Border::TopLeft | Border::TopBottom | Border::TopRight | Border::BottomLeft | Border::BottomRight
+            | Border::LeftRight | Border::MiddleLeft | Border::MiddleRight => (120, 120),
+            Border::CounterLeft | Border::CounterRight => (10, 270),
+            Border::CounterTop | Border::CounterBottom => (130, 10),
+        };
+
+        svg.content_fit(ContentFit::Fill)
+                .width(width / 5)
+                .height(height / 5)
     }
 }
 

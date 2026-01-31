@@ -179,4 +179,67 @@ impl Texture {
                     .expect("gay/background should contain valid colour data"),
         }
     }
+
+    pub fn get_border(self, border: Border) -> &'static [u8] {
+        match self {
+            Texture::Dark => match border {
+                Border::TopLeft => include_bytes!("dark/border/topleft.svg"),
+                Border::TopBottom => include_bytes!("dark/border/topbottom.svg"),
+                Border::TopRight => include_bytes!("dark/border/topright.svg"),
+                Border::BottomLeft => include_bytes!("dark/border/bottomleft.svg"),
+                Border::BottomRight => include_bytes!("dark/border/bottomright.svg"),
+                Border::LeftRight => include_bytes!("dark/border/leftright.svg"),
+                Border::MiddleLeft => include_bytes!("dark/border/middleleft.svg"),
+                Border::MiddleRight => include_bytes!("dark/border/middleright.svg"),
+                Border::CounterLeft => include_bytes!("dark/border/counterleft.svg"),
+                Border::CounterRight => include_bytes!("dark/border/counterright.svg"),
+                Border::CounterTop => include_bytes!("dark/border/countertop.svg"),
+                Border::CounterBottom => include_bytes!("dark/border/counterbottom.svg"),
+            }
+            Texture::Light => match border {
+                Border::TopLeft => include_bytes!("light/border/topleft.svg"),
+                Border::TopBottom => include_bytes!("light/border/topbottom.svg"),
+                Border::TopRight => include_bytes!("light/border/topright.svg"),
+                Border::BottomLeft => include_bytes!("light/border/bottomleft.svg"),
+                Border::BottomRight => include_bytes!("light/border/bottomright.svg"),
+                Border::LeftRight => include_bytes!("light/border/leftright.svg"),
+                Border::MiddleLeft => include_bytes!("light/border/middleleft.svg"),
+                Border::MiddleRight => include_bytes!("light/border/middleright.svg"),
+                Border::CounterLeft => include_bytes!("light/border/counterleft.svg"),
+                Border::CounterRight => include_bytes!("light/border/counterright.svg"),
+                Border::CounterTop => include_bytes!("light/border/countertop.svg"),
+                Border::CounterBottom => include_bytes!("light/border/counterbottom.svg"),
+            }
+            Texture::Gay => match border {
+                Border::TopLeft => include_bytes!("gay/border/topleft.svg"),
+                Border::TopBottom => include_bytes!("gay/border/topbottom.svg"),
+                Border::TopRight => include_bytes!("gay/border/topright.svg"),
+                Border::BottomLeft => include_bytes!("gay/border/bottomleft.svg"),
+                Border::BottomRight => include_bytes!("gay/border/bottomright.svg"),
+                Border::LeftRight => include_bytes!("gay/border/leftright.svg"),
+                Border::MiddleLeft => include_bytes!("gay/border/middleleft.svg"),
+                Border::MiddleRight => include_bytes!("gay/border/middleright.svg"),
+                Border::CounterLeft => include_bytes!("gay/border/counterleft.svg"),
+                Border::CounterRight => include_bytes!("gay/border/counterright.svg"),
+                Border::CounterTop => include_bytes!("gay/border/countertop.svg"),
+                Border::CounterBottom => include_bytes!("gay/border/counterbottom.svg"),
+            }
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum Border {
+    TopLeft,
+    TopBottom,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+    LeftRight,
+    MiddleLeft,
+    MiddleRight,
+    CounterLeft,
+    CounterRight,
+    CounterTop,
+    CounterBottom,
 }

@@ -1,8 +1,9 @@
 use derive_more::From;
 use directories::ProjectDirs;
 use iced::{widget, Element, Subscription, Task};
-use iced_core::{mouse, Event};
+use iced_core::{mouse, Color, ContentFit, Event, Length};
 use std::sync::LazyLock;
+use iced::widget::{container, svg};
 
 mod minsweeper;
 mod settings_menu;
