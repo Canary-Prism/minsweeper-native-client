@@ -1937,9 +1937,9 @@ dependencies = [
 
 [[package]]
 name = "minsweeper-rs"
-version = "2.0.1"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8825fe6ca4a2acbf5306efa3d28e31dd52f05cd7e5622f375e0431340540bb7"
+checksum = "1c9958e15a5372d7608aabbe51191e3c9d60dcbd61e44cd17384b2dbe0fa8eb7"
 dependencies = [
  "enumset",
  "fastrand",
