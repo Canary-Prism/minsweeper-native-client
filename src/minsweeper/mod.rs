@@ -381,7 +381,7 @@ impl MinsweeperGame {
             (size.mines().get() as isize - size.width().get() as isize * size.height().get() as isize).to_string().len())
     }
 
-    fn number_display<'a>(&'a self, number: isize, length: usize) -> Row<'a, Message> {
+    fn number_display(&'_ self, number: isize, length: usize) -> Row<'_, Message> {
         const NUMBER_SIZE_MULTIPLIER: u32 = 2;
         row(formatx!(format!("{{:0{}}}", length).as_str(), number)
                 .expect("number display should never fail")
