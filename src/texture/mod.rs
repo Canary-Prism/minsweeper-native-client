@@ -1,3 +1,4 @@
+use iced_core::Color;
 use minsweeper_rs::{Cell, CellState, CellType, GameStatus};
 use serde::{Deserialize, Serialize};
 
@@ -165,6 +166,17 @@ impl Texture {
                 '-' => include_bytes!("gay/counter/counter-.svg"),
                 _ => unimplemented!()
             }
+        }
+    }
+
+    pub fn get_background_colour(self) -> Color {
+        match self {
+            Texture::Dark => include_str!("dark/background").parse()
+                    .expect("dark/background should contain valid colour data"),
+            Texture::Light => include_str!("light/background").parse()
+                    .expect("light/background should contain valid colour data"),
+            Texture::Gay => include_str!("dark/background").parse()
+                    .expect("gay/background should contain valid colour data"),
         }
     }
 }

@@ -334,7 +334,7 @@ impl MinsweeperGame {
 
     pub fn view(&self) -> Element<'_, Message> {
 
-        widget::column![
+        container(widget::column![
             container(row![
                 container(self.number_display(self.remaining_mines(), self.remaining_mine_digit()))
                     .padding(Padding::default().horizontal(10)),
@@ -355,7 +355,10 @@ impl MinsweeperGame {
                 .align_x(Horizontal::Center)
                 .align_y(Vertical::Center)
                 .into())
-        ].into()
+        ]).style(|_theme| container::Style {
+            background: Some(Background::Color(self.texture.get_background_colour())),
+            ..Default::default()
+        }).into()
     }
 
     fn cell_size(&self, size: Size) -> f32 {
