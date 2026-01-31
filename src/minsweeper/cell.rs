@@ -4,7 +4,7 @@ use crate::texture::Texture;
 use iced::widget::{mouse_area, svg};
 use iced::{mouse, Element};
 use minsweeper_rs::solver::Operation;
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub struct Cell {
@@ -14,7 +14,7 @@ pub struct Cell {
     pub hovering: bool,
     pub pressed: bool,
     pub force: bool,
-    pub revealing: Arc<AtomicI32>
+    pub revealing: Arc<AtomicBool>
 }
 
 impl Debug for Cell {
@@ -96,7 +96,7 @@ impl Cell {
     // }
 
     pub fn is_down(&self) -> bool {
-        (self.pressed && self.hovering) || self.revealing.load(Ordering::Relaxed) > 0
+        (self.pressed && self.hovering) || self.revealing.load(Ordering::Relaxed)
     }
 
     fn is_armed(&self) -> bool {

@@ -23,6 +23,7 @@ use formatx::formatx;
 use futures_util::future::{AbortHandle, AbortRegistration, Aborted};
 use tokio::sync::Mutex;
 use uuid::Uuid;
+use crate::minsweeper::restart::RestartButton;
 
 pub type MinsweeperType = Arc<AsyncMinsweeperGame<SolverType, FnType, FnType>>;
 pub type SolverType = Arc<dyn Solver + Send + Sync>;
@@ -148,7 +149,7 @@ impl MinsweeperGame {
         };
 
         for revealing in &revealings {
-            revealing.fetch_add(1, Ordering::Relaxed);
+            revealing.store(true, Ordering::Relaxed);
         }
 
         let game = self.game.clone();
@@ -168,7 +169,7 @@ impl MinsweeperGame {
             let revealings = revealings.clone();
             Task::future(async move {
                 for revealing in revealings {
-                    revealing.fetch_sub(1, Ordering::Relaxed);
+                    revealing.store(false, Ordering::Relaxed);
                 }
                 let mut handles = handles.lock().await;
                 handles.remove(&uuid);
@@ -279,13 +280,19 @@ impl MinsweeperGame {
         let cell = &mut self.cells[point];
         match message {
             cell::Message::Press(_button) => {
-                cell.pressed = true;
+                if self.game.blocking_gamestate().board[point].cell_state == CellState::Unknown
+                        || matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(1..)) {
+                    cell.pressed = true;
+                }
             }
             cell::Message::Release(_button) => {
                 cell.pressed = false;
             }
             cell::Message::SelfPress(button) => {
-                cell.pressed = true;
+                if self.game.blocking_gamestate().board[point].cell_state == CellState::Unknown
+                        || matches!(self.game.blocking_gamestate().board[point].cell_type, CellType::Safe(1..)) {
+                    cell.pressed = true;
+                }
 
                 if matches!(button, mouse::Button::Right) {
                     cell.pressed = false;
@@ -302,7 +309,7 @@ impl MinsweeperGame {
                 cell.force = value;
             }
             cell::Message::Revealing(value) => {
-                cell.revealing.fetch_add(if value { 1 } else { -1 }, Ordering::Relaxed);
+                cell.revealing.store(value, Ordering::Relaxed);
             }
             cell::Message::Enter => {
                 cell.hovering = true;
@@ -338,11 +345,7 @@ impl MinsweeperGame {
             container(row![
                 container(self.number_display(self.remaining_mines(), self.remaining_mine_digit()))
                     .padding(Padding::default().horizontal(10)),
-                button(svg(svg::Handle::from_memory(
-                        self.texture.get_restart_button(self.game.blocking_gamestate().status, false, false))))
-                    .width(Length::Fixed(70.0))
-                    .height(Length::Fixed(70.0))
-                    .on_press(Message::Restart)
+                Element::new(RestartButton::new(self.texture, self.game.blocking_gamestate().status, self.any_revealing(), Message::Restart)),
             ]).width(Length::Fill).align_x(Horizontal::Center),
             responsive(|size| container(Grid::from_iter(self.points()
                 .map(|point| (point, &self.cells[point]))
@@ -391,6 +394,12 @@ impl MinsweeperGame {
                                 .width(13 * NUMBER_SIZE_MULTIPLIER)
                                 .height(23 * NUMBER_SIZE_MULTIPLIER)
                                 .into()))
+    }
+
+    fn any_revealing(&self) -> bool {
+        self.cells
+                .iter()
+                .any(|cell| cell.is_down())
     }
 }
 
