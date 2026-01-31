@@ -120,4 +120,51 @@ impl Texture {
             }
         }
     }
+
+    pub fn get_digit(self, digit: char) -> &'static [u8] {
+        match self {
+            Texture::Dark => match digit {
+                '0' => include_bytes!("dark/counter/counter0.svg"),
+                '1' => include_bytes!("dark/counter/counter1.svg"),
+                '2' => include_bytes!("dark/counter/counter2.svg"),
+                '3' => include_bytes!("dark/counter/counter3.svg"),
+                '4' => include_bytes!("dark/counter/counter4.svg"),
+                '5' => include_bytes!("dark/counter/counter5.svg"),
+                '6' => include_bytes!("dark/counter/counter6.svg"),
+                '7' => include_bytes!("dark/counter/counter7.svg"),
+                '8' => include_bytes!("dark/counter/counter8.svg"),
+                '9' => include_bytes!("dark/counter/counter9.svg"),
+                '-' => include_bytes!("dark/counter/counter-.svg"),
+                _ => unimplemented!()
+            }
+            Texture::Light => match digit {
+                '0' => include_bytes!("light/counter/counter0.svg"),
+                '1' => include_bytes!("light/counter/counter1.svg"),
+                '2' => include_bytes!("light/counter/counter2.svg"),
+                '3' => include_bytes!("light/counter/counter3.svg"),
+                '4' => include_bytes!("light/counter/counter4.svg"),
+                '5' => include_bytes!("light/counter/counter5.svg"),
+                '6' => include_bytes!("light/counter/counter6.svg"),
+                '7' => include_bytes!("light/counter/counter7.svg"),
+                '8' => include_bytes!("light/counter/counter8.svg"),
+                '9' => include_bytes!("light/counter/counter9.svg"),
+                '-' => include_bytes!("light/counter/counter-.svg"),
+                _ => unimplemented!()
+            }
+            Texture::Gay => match digit {
+                '0' => include_bytes!("gay/counter/counter0.svg"),
+                '1' => include_bytes!("gay/counter/counter1.svg"),
+                '2' => include_bytes!("gay/counter/counter2.svg"),
+                '3' => include_bytes!("gay/counter/counter3.svg"),
+                '4' => include_bytes!("gay/counter/counter4.svg"),
+                '5' => include_bytes!("gay/counter/counter5.svg"),
+                '6' => include_bytes!("gay/counter/counter6.svg"),
+                '7' => include_bytes!("gay/counter/counter7.svg"),
+                '8' => include_bytes!("gay/counter/counter8.svg"),
+                '9' => include_bytes!("gay/counter/counter9.svg"),
+                '-' => include_bytes!("gay/counter/counter-.svg"),
+                _ => unimplemented!()
+            }
+        }
+    }
 }

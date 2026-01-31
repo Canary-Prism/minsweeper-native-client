@@ -1,13 +1,15 @@
+use std::cmp::max;
 use futures_util::FutureExt;
 mod cell;
 mod grid;
+mod restart;
 
 use crate::texture::Texture;
 use derive_more::From;
-use iced::widget::{button, container, responsive, row, svg, text, Grid};
+use iced::widget::{button, container, responsive, row, svg, text, Grid, Row};
 use iced::{widget, Element, Task};
 use iced_core::alignment::{Horizontal, Vertical};
-use iced_core::{mouse, Length, Padding, Size};
+use iced_core::{mouse, Background, Border, ContentFit, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::{Move, Operation, Solver};
@@ -17,6 +19,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use formatx::formatx;
 use futures_util::future::{AbortHandle, AbortRegistration, Aborted};
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -127,7 +130,7 @@ impl MinsweeperGame {
                 let solver = self.solver.clone();
                 return Task::future(async move {
                     game.start_with_solver(solver).await
-                }).discard()
+                }).map(|_| Message::Repaint)
             }
             Message::Repaint => {}
         }
@@ -242,132 +245,6 @@ impl MinsweeperGame {
                 phase.map(|phase| ((), phase))
             }
         })).map(|_| Message::Repaint)
-        // let mewo = futures_util::stream::unfold(Phase::Start, move |phase| {
-        //     let game = game.clone();
-        //     let handles = handles.clone();
-        //     match phase {
-        //         Phase::Start => {
-        //             let task = async move {
-        //
-        //                 let uuid = Uuid::new_v4();
-        //                 let (abortable, handle) = futures_util::future::abortable(async move {
-        //                     let gamestate = game.gamestate().await;
-        //                     let Some(Move { actions, .. }) = solver.solve(&gamestate) else {
-        //                         return Phase::End(uuid)
-        //                     };
-        //
-        //                     for action in actions {
-        //                         match action.operation {
-        //                             Operation::Reveal | Operation::Chord => left_click(&game, action.point, false).await,
-        //                             Operation::Flag => right_click(&game, action.point).await,
-        //                         }
-        //                     }
-        //
-        //                     Phase::SolveNext(uuid)
-        //                 });
-        //                 let future = abortable
-        //                         .map(|e| {
-        //                             match e {
-        //                                 Ok(e) => e,
-        //                                 _ => Phase::Nothing
-        //                             }
-        //                         });
-        //
-        //                 handles.lock().await.insert(uuid, handle);
-        //
-        //                 future
-        //             };
-        //
-        //             Some(task.then(|e| e))
-        //         }
-        //         Phase::SolveNext(uuid) => {
-        //             let task = async move {
-        //                 handles.lock().await.remove(&uuid);
-        //                 let uuid = Uuid::new_v4();
-        //                 (async {
-        //                     let gamestate = game.gamestate().await;
-        //                     let Some(Move { actions, .. }) = solver.solve(&gamestate) else {
-        //                         return Phase::End(uuid)
-        //                     };
-        //
-        //                     for action in actions {
-        //                         match action.operation {
-        //                             Operation::Reveal | Operation::Chord => left_click(&game, action.point, false).await,
-        //                             Operation::Flag => right_click(&game, action.point).await,
-        //                         }
-        //                     }
-        //
-        //                     Phase::SolveNext(uuid)
-        //                 })
-        //             };
-        //
-        //             Some(task.then(|e| e))
-        //         }
-        //         Phase::End(uuid) => {
-        //             Some(Task::future(async move {
-        //                 handles.lock().await.remove(&uuid);
-        //                 Phase::Nothing
-        //             }))
-        //         }
-        //         Phase::Nothing => {
-        //             None
-        //         }
-        //     }
-        //     // if let Some(uuid) = phase {
-        //     //     let task = Task::future(async move {
-        //     //         handles.lock().await.remove(uuid);
-        //     //         Task::future(async {
-        //     //             let gamestate = game.gamestate().await;
-        //     //             let Some(Move { actions, .. }) = solver.solve(&gamestate) else {
-        //     //                 return None
-        //     //             };
-        //     //
-        //     //             for action in actions {
-        //     //                 match action.operation {
-        //     //                     Operation::Reveal | Operation::Chord => left_click(&game, action.point, false).await,
-        //     //                     Operation::Flag => right_click(&game, action.point).await,
-        //     //                 }
-        //     //             }
-        //     //
-        //     //             Some(uuid)
-        //     //         })
-        //     //     });
-        //     //
-        //     //     task.then(|e| e)
-        //     // } else {
-        //     //     Task::future(async move {
-        //     //         handles.lock().await.remove(&phase);
-        //     //         None
-        //     //     })
-        //     // }
-        // });
-        // let (abortable, handle) = futures_util::future::abortable(async move {
-        //     // while let Some(Move { actions, .. }) = solver.solve(&game.gamestate().await) {
-        //     //     for action in actions {
-        //     //         match action.operation {
-        //     //             Operation::Reveal | Operation::Chord => left_click(&game, action.point, false).await,
-        //     //             Operation::Flag => right_click(&game, action.point).await,
-        //     //         }
-        //     //     }
-        //     // }
-        //
-        //     loop {
-        //         let gamestate = game.gamestate().await;
-        //         let Some(Move { actions, .. }) = solver.solve(&gamestate) else {
-        //             break
-        //         };
-        //
-        //         for action in actions {
-        //             match action.operation {
-        //                 Operation::Reveal | Operation::Chord => left_click(&game, action.point, false).await,
-        //                 Operation::Flag => right_click(&game, action.point).await,
-        //             }
-        //         }
-        //
-        //         interval.tick().await;
-        //     }
-        // });
-        // (Task::future(abortable).map(|_| Message::Repaint), handle)
     }
 
     fn right_click(&self, point: Point) -> Task<Message> {
@@ -459,7 +336,7 @@ impl MinsweeperGame {
 
         widget::column![
             container(row![
-                container(text!("remaining mines: {}", self.game.blocking_gamestate().remaining_mines))
+                container(self.number_display(self.remaining_mines(), self.remaining_mine_digit()))
                     .padding(Padding::default().horizontal(10)),
                 button(svg(svg::Handle::from_memory(
                         self.texture.get_restart_button(self.game.blocking_gamestate().status, false, false))))
@@ -483,6 +360,34 @@ impl MinsweeperGame {
 
     fn cell_size(&self, size: Size) -> f32 {
         f32::min(size.width / self.size.width().get() as f32, size.height / self.size.height().get() as f32)
+    }
+
+
+    fn remaining_mines(&self) -> isize {
+        let gamestate = self.game.blocking_gamestate();
+        match gamestate.status {
+            GameStatus::Playing => gamestate.remaining_mines,
+            GameStatus::Won | GameStatus::Lost => 0,
+            GameStatus::Never => self.size.mines().get() as isize
+        }
+    }
+
+    fn remaining_mine_digit(&self) -> usize {
+        let size = self.size;
+        max(size.mines().to_string().len(),
+            (size.mines().get() as isize - size.width().get() as isize * size.height().get() as isize).to_string().len())
+    }
+
+    fn number_display<'a>(&'a self, number: isize, length: usize) -> Row<'a, Message> {
+        const NUMBER_SIZE_MULTIPLIER: u32 = 2;
+        row(formatx!(format!("{{:0{}}}", length).as_str(), number)
+                .expect("number display should never fail")
+                .chars()
+                .map(|c|
+                        svg(svg::Handle::from_memory(self.texture.get_digit(c)))
+                                .width(13 * NUMBER_SIZE_MULTIPLIER)
+                                .height(23 * NUMBER_SIZE_MULTIPLIER)
+                                .into()))
     }
 }
 
