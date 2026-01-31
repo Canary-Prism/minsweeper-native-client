@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.2
+- improved restart button look
+- failed to borders grr
+
 ## 0.4.1
 - made auto work :3
 - also added the rest of the solvers from minsweeper-client
