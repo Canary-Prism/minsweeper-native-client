@@ -9,7 +9,7 @@ use iced_aw::{menu_bar, number_input};
 use iced_core::alignment::Vertical;
 use minsweeper_rs::board::{BoardSize, ConventionalSize};
 use minsweeper_rs::solver::mia::{Level, MiaSolver};
-use minsweeper_rs::solver::start::{SafeStart, ZeroStart};
+use minsweeper_rs::solver::start::{SafeStart, WinStart, ZeroStart};
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeStruct;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
@@ -197,6 +197,7 @@ impl SettingsMenu {
                 (menu_radio("Expert Only Solver", KnownSolver::ExpertOnlySolver, self.settings.solver)),
                 (menu_radio("Safe Start", KnownSolver::SafeStart, self.settings.solver)),
                 (menu_radio("Zero Start", KnownSolver::ZeroStart, self.settings.solver)),
+                (menu_radio("Win Start", KnownSolver::WinStart, self.settings.solver)),
             ).max_width(200.0)),
             (menu_label("Cheats"), menu!(
                 (menu_checkbox("Auto", Message::Auto, self.settings.auto)),
@@ -398,7 +399,8 @@ pub enum KnownSolver {
     IntermediateOnlySolver,
     ExpertOnlySolver,
     SafeStart,
-    ZeroStart
+    ZeroStart,
+    WinStart,
 }
 
 impl From<KnownSolver> for SolverType {
@@ -412,6 +414,7 @@ impl From<KnownSolver> for SolverType {
             KnownSolver::ExpertOnlySolver => Arc::new(MiaSolver::only(Level::Expert)),
             KnownSolver::SafeStart => Arc::new(SafeStart),
             KnownSolver::ZeroStart => Arc::new(ZeroStart),
+            KnownSolver::WinStart => Arc::new(WinStart),
         }
     }
 }
