@@ -387,8 +387,8 @@ impl MinsweeperGame {
     fn remaining_mines(&self) -> isize {
         let gamestate = self.game.blocking_gamestate();
         match gamestate.status {
-            GameStatus::Playing => gamestate.remaining_mines,
-            GameStatus::Won | GameStatus::Lost => 0,
+            GameStatus::Playing | GameStatus::Lost => gamestate.remaining_mines,
+            GameStatus::Won => 0,
             GameStatus::Never => self.size.mines().get() as isize
         }
     }
