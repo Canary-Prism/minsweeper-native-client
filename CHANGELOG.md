@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+- added Win Start solver
+- added auto mode settings
+
 ## 0.4.2
 - improved restart button look
 - failed to borders grr
