@@ -1,6 +1,6 @@
 use derive_more::From;
 use directories::ProjectDirs;
-use iced::{widget, Element, Subscription, Task};
+use iced::{widget, window, Element, Subscription, Task};
 use iced_core::{mouse, Event};
 use std::sync::LazyLock;
 
@@ -13,7 +13,12 @@ static DIRS: LazyLock<ProjectDirs> = LazyLock::new(||
                 .expect("couldn't obtain project directories"));
 
 fn main() -> iced::Result {
+    println!("mewo");
     iced::application(State::init, State::update, State::view)
+            .window(window::Settings {
+                icon: Some(window::icon::from_file_data(include_bytes!("texture/icon.png"), None).unwrap()),
+                ..Default::default()
+            })
             .subscription(State::subscriptions)
             .run()
 }
