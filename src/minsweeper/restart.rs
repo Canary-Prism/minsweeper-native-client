@@ -1,11 +1,10 @@
-use derive_more::From;
-use iced::{Element, Task};
-use iced::widget::{svg, Button};
-use iced::widget::button::{Catalog, Status};
-use iced_core::{layout, mouse, overlay, renderer, touch, window, Background, Clipboard, Color, Event, Layout, Length, Padding, Rectangle, Renderer, Shell, Size, Vector, Widget};
-use iced_core::widget::{tree, Operation, Tree};
-use minsweeper_rs::GameStatus;
 use crate::texture::Texture;
+use iced::widget::button::{Catalog, Status};
+use iced::widget::svg;
+use iced::Element;
+use iced_core::widget::{tree, Operation, Tree};
+use iced_core::{layout, mouse, overlay, renderer, touch, window, Background, Clipboard, Color, Event, Layout, Length, Padding, Rectangle, Renderer, Shell, Size, Vector, Widget};
+use minsweeper_rs::GameStatus;
 
 pub struct RestartButton<Message: Clone> {
     texture: Texture,
@@ -57,7 +56,7 @@ impl<Message: Clone> Widget<Message, iced::Theme, iced::Renderer> for RestartBut
     }
 
     fn children(&self) -> Vec<Tree> {
-        vec![Tree::new(&self.content())]
+        vec![Tree::new(self.content())]
     }
 
     fn diff(&self, tree: &mut Tree) {
@@ -262,19 +261,19 @@ impl<Message: Clone> Widget<Message, iced::Theme, iced::Renderer> for RestartBut
 
     fn overlay<'b>(
         &'b mut self,
-        tree: &'b mut Tree,
-        layout: Layout<'b>,
-        renderer: &iced::Renderer,
-        viewport: &Rectangle,
-        translation: Vector,
+        _tree: &'b mut Tree,
+        _layout: Layout<'b>,
+        _renderer: &iced::Renderer,
+        _viewport: &Rectangle,
+        _translation: Vector,
     ) -> Option<overlay::Element<'b, Message, iced::Theme, iced::Renderer>> {
         None
         // self.content().as_widget_mut().overlay(
-        //     &mut tree.children[0],
-        //     layout.children().next().unwrap(),
-        //     renderer,
-        //     viewport,
-        //     translation,
+        //     &mut _tree.children[0],
+        //     _layout.children().next().unwrap(),
+        //     _renderer,
+        //     _viewport,
+        //     _translation,
         // )
     }
 }

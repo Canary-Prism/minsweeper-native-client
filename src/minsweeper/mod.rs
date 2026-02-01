@@ -1,15 +1,17 @@
-use std::cmp::max;
-use futures_util::FutureExt;
 mod cell;
 mod grid;
 mod restart;
 
+use crate::minsweeper::restart::RestartButton;
+use crate::settings_menu::Auto;
 use crate::texture::{Border, Texture};
 use derive_more::From;
-use iced::widget::{button, container, responsive, row, svg, text, Grid, Row, Svg};
+use formatx::formatx;
+use futures_util::future::AbortHandle;
+use iced::widget::{container, responsive, row, svg, Grid, Row, Svg};
 use iced::{widget, Element, Task};
 use iced_core::alignment::{Horizontal, Vertical};
-use iced_core::{mouse, Background, Color, ContentFit, Length, Padding, Size};
+use iced_core::{mouse, Background, ContentFit, Length, Padding, Size};
 use minsweeper_rs::board::{BoardSize, Point};
 use minsweeper_rs::minsweeper::nonblocking::AsyncMinsweeperGame;
 use minsweeper_rs::solver::{Move, Operation, Solver};
@@ -19,12 +21,8 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use formatx::formatx;
-use futures_util::future::{AbortHandle, AbortRegistration, Aborted};
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use crate::minsweeper::restart::RestartButton;
-use crate::settings_menu::{Auto, KnownSolver};
 
 pub type MinsweeperType = Arc<AsyncMinsweeperGame<SolverType, FnType, FnType>>;
 pub type SolverType = Arc<dyn Solver + Send + Sync>;
@@ -399,7 +397,7 @@ impl MinsweeperGame {
 
     fn remaining_mine_digit(&self) -> usize {
         let size = self.size;
-        max(size.mines().to_string().len(),
+        usize::max(size.mines().to_string().len(),
             (size.mines().get() as isize - size.width().get() as isize * size.height().get() as isize).to_string().len())
     }
 
