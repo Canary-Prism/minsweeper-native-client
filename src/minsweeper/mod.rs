@@ -24,6 +24,7 @@ use futures_util::future::{AbortHandle, AbortRegistration, Aborted};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use crate::minsweeper::restart::RestartButton;
+use crate::settings_menu::{Auto, KnownSolver};
 
 pub type MinsweeperType = Arc<AsyncMinsweeperGame<SolverType, FnType, FnType>>;
 pub type SolverType = Arc<dyn Solver + Send + Sync>;
@@ -34,7 +35,7 @@ pub struct MinsweeperGame {
     size: BoardSize,
     solver: SolverType,
     texture: Texture,
-    auto: bool,
+    auto: Option<Auto>,
     flag_chord: bool,
     hover_chord: bool,
     cells: grid::Grid<cell::Cell>,
@@ -58,7 +59,7 @@ pub enum Message {
 
 impl MinsweeperGame {
 
-    pub fn new(size: BoardSize, solver: SolverType, texture: Texture, auto: bool, flag_chord: bool, hover_chord: bool) -> Self {
+    pub fn new(size: BoardSize, solver: SolverType, texture: Texture, auto: Option<Auto>, flag_chord: bool, hover_chord: bool) -> Self {
         let game = AsyncMinsweeperGame::new(size,
                                                                       (|| {}) as fn(), (|| {}) as fn());
         let game = Arc::new(game);
@@ -85,7 +86,7 @@ impl MinsweeperGame {
         }
     }
 
-    pub fn set_auto(&mut self, auto: bool) {
+    pub fn set_auto(&mut self, auto: Option<Auto>) {
         self.auto = auto;
     }
 
@@ -181,20 +182,23 @@ impl MinsweeperGame {
 
 
         drop(handles_lock);
-        if self.auto && !self.autoing.fetch_or(true, Ordering::Relaxed) {
-            let solver = self.solver.clone();
+        if let Some(auto) = &self.auto && !self.autoing.fetch_or(true, Ordering::Relaxed) {
+            let solver = auto.solver()
+                    .map(Into::into)
+                    .unwrap_or(self.solver.clone());
             let game = self.game.clone();
             let handles = self.handles.clone();
+            let delay = auto.delay();
             let autoing = self.autoing.clone();
 
 
-            task = task.then(move |_| Self::auto_task(solver.clone(), game.clone(), handles.clone(), autoing.clone()).map(|_| ()))
+            task = task.then(move |_| Self::auto_task(solver.clone(), game.clone(), handles.clone(), delay, autoing.clone()).map(|_| ()))
         }
 
         task.map(|_| Message::Repaint)
     }
 
-    fn auto_task(solver: SolverType, game: MinsweeperType, handles: Arc<Mutex<HashMap<Uuid, AbortHandle>>>, autoing: Arc<AtomicBool>) -> Task<Message> {
+    fn auto_task(solver: SolverType, game: MinsweeperType, handles: Arc<Mutex<HashMap<Uuid, AbortHandle>>>, delay: Duration, autoing: Arc<AtomicBool>) -> Task<Message> {
         #[derive(Debug)]
         enum Phase {
             Start, SolveNext(Uuid), End(Uuid)
@@ -212,7 +216,7 @@ impl MinsweeperGame {
                 }
 
                 if matches!(phase, Phase::SolveNext(_)) {
-                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    tokio::time::sleep(delay).await;
                 }
 
                 let phase = if matches!(phase, Phase::Start | Phase::SolveNext(_)) {

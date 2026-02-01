@@ -61,9 +61,9 @@ impl State {
                     ChangeTexture(texture) => {
                         self.minsweeper.change_textures(texture)
                     }
-                    Auto(value) => {
-                        self.minsweeper.set_auto(value)
-                    },
+                    Auto(_) | ChangeAutoSolver(_) | ChangeAutoDelay(_) => {
+                        self.minsweeper.set_auto(self.settings_menu.settings().auto().cloned())
+                    }
                     FlagChord(value) => {
                         self.minsweeper.set_flag_chord(value)
                     }
@@ -119,5 +119,5 @@ impl State {
 }
 
 fn make_game(settings: &settings_menu::Settings) -> minsweeper::MinsweeperGame {
-    minsweeper::MinsweeperGame::new(settings.size(), settings.solver(), settings.texture(), settings.auto(), settings.flag_chord(), settings.hover_chord())
+    minsweeper::MinsweeperGame::new(settings.size(), settings.solver(), settings.texture(), settings.auto().cloned(), settings.flag_chord(), settings.hover_chord())
 }

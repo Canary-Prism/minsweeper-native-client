@@ -18,6 +18,7 @@ use std::fs::{create_dir_all, File};
 use std::io;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
+use std::time::Duration;
 
 static SETTINGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let folder = DIRS.data_dir();
@@ -35,6 +36,7 @@ pub struct Settings {
     texture: Texture,
     solver: KnownSolver,
     auto: bool,
+    auto_settings: Auto,
     flag_chord: bool,
     hover_chord: bool,
 }
@@ -46,6 +48,7 @@ impl Default for Settings {
             texture: Texture::default(),
             solver: KnownSolver::default(),
             auto: false,
+            auto_settings: Auto::default(),
             flag_chord: false,
             hover_chord: false,
         }
@@ -80,8 +83,12 @@ impl Settings {
         self.solver.into()
     }
 
-    pub fn auto(&self) -> bool {
-        self.auto
+    pub fn auto(&self) -> Option<&Auto> {
+        if self.auto {
+            Some(&self.auto_settings)
+        } else {
+            None
+        }
     }
 
     pub fn flag_chord(&self) -> bool {
@@ -133,6 +140,8 @@ pub enum Message {
     FlagChord(bool),
     #[from(skip)]
     HoverChord(bool),
+    ChangeAutoSolver(Option<KnownSolver>),
+    ChangeAutoDelay(Duration),
 }
 
 impl SettingsMenu {
@@ -164,6 +173,12 @@ impl SettingsMenu {
             }
             Message::HoverChord(value) => {
                 self.settings.hover_chord = value;
+            }
+            Message::ChangeAutoSolver(solver) => {
+                self.settings.auto_settings.solver = solver;
+            }
+            Message::ChangeAutoDelay(delay) => {
+                self.settings.auto_settings.delay = delay;
             }
         }
 
@@ -201,6 +216,24 @@ impl SettingsMenu {
             ).max_width(200.0)),
             (menu_label("Cheats"), menu!(
                 (menu_checkbox("Auto", Message::Auto, self.settings.auto)),
+                (submenu_maybe("Auto Settings", self.settings.auto), menu!(
+                    (submenu("Custom Solver"), menu!(
+                        (menu_radio("None (same as normal solver)", None, self.settings.auto_settings.solver)),
+                        (menu_radio("Mia Solver", Some(KnownSolver::MiaSolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Beginner Solver", Some(KnownSolver::BeginnerSolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Intermediate Solver", Some(KnownSolver::IntermediateSolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Expert Solver", Some(KnownSolver::ExpertSolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Intermediate Only Solver", Some(KnownSolver::IntermediateOnlySolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Expert Only Solver", Some(KnownSolver::ExpertOnlySolver), self.settings.auto_settings.solver)),
+                        (menu_radio("Safe Start", Some(KnownSolver::SafeStart), self.settings.auto_settings.solver)),
+                        (menu_radio("Zero Start", Some(KnownSolver::ZeroStart), self.settings.auto_settings.solver)),
+                        (menu_radio("Win Start", Some(KnownSolver::WinStart), self.settings.auto_settings.solver)),
+                    ).max_width(200.0)),
+
+                    (text!("Delay: {} ms", self.settings.auto_settings.delay.as_millis())),
+                    (slider(50..=1000, self.settings.auto_settings.delay.as_millis() as u32,
+                            |millis| Message::ChangeAutoDelay(Duration::from_millis(millis as u64)))),
+                ).max_width(150.0)),
                 (menu_checkbox("Flag Chord", Message::FlagChord, self.settings.flag_chord)),
                 (menu_checkbox("Hover Chord", Message::HoverChord, self.settings.hover_chord)),
             ).max_width(150.0)),
@@ -303,6 +336,15 @@ fn menu_button<'a>(content: impl Into<Element<'a, Message>>, message: impl Into<
                 }
             })
             .width(Length::Fill)
+}
+
+fn submenu<'a>(content: impl Into<Element<'a, Message>>) -> Button<'a, Message> {
+    menu_button(content, Message::MenuLabel)
+}
+
+fn submenu_maybe<'a>(content: impl Into<Element<'a, Message>>, enabled: bool) -> Option<Button<'a, Message>> {
+    Some(submenu(content))
+            .filter(|_| enabled)
 }
 
 fn menu_radio<'a, T: Into<Message> + Copy + Eq>(label: impl Into<String>, value: T, selected: T) -> Radio<'a, Message> {
@@ -416,5 +458,30 @@ impl From<KnownSolver> for SolverType {
             KnownSolver::ZeroStart => Arc::new(ZeroStart),
             KnownSolver::WinStart => Arc::new(WinStart),
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Auto {
+    solver: Option<KnownSolver>,
+    delay: Duration
+}
+
+impl Default for Auto {
+    fn default() -> Self {
+        Self {
+            solver: None,
+            delay: Duration::from_millis(50)
+        }
+    }
+}
+
+impl Auto {
+    pub fn solver(&self) -> Option<KnownSolver> {
+        self.solver
+    }
+
+    pub fn delay(&self) -> Duration {
+        self.delay
     }
 }
