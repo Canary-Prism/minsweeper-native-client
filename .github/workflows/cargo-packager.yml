@@ -20,8 +20,7 @@ jobs:
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          brew install cargo-binstall
-          cargo binstall cargo-packager --locked
+          cargo install cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -52,8 +51,7 @@ jobs:
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          brew install cargo-binstall
-          cargo binstall cargo-packager --locked
+          cargo install cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -115,8 +113,7 @@ jobs:
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall cargo-packager --locked
+          cargo install cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -148,8 +145,7 @@ jobs:
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-          cargo binstall cargo-packager --locked
+          cargo install cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
