@@ -16,10 +16,12 @@ jobs:
         uses: "actions-rust-lang/setup-rust-toolchain@v1"
         with:
           target: "aarch64-apple-darwin"
+          rustflags: ""
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          cargo install cargo-packager --locked
+          brew install cargo-binstall
+          cargo binstall cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -46,10 +48,12 @@ jobs:
         uses: "actions-rust-lang/setup-rust-toolchain@v1"
         with:
           target: "x86_64-apple-darwin"
+          rustflags: ""
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          cargo install cargo-packager --locked
+          brew install cargo-binstall
+          cargo binstall cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -76,6 +80,7 @@ jobs:
         uses: "actions-rust-lang/setup-rust-toolchain@v1"
         with:
           target: "x86_64-pc-windows-gnu"
+          rustflags: ""
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
@@ -106,10 +111,12 @@ jobs:
         uses: "actions-rust-lang/setup-rust-toolchain@v1"
         with:
           target: "x86_64-unknown-linux-gnu"
+          rustflags: ""
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          cargo install cargo-packager --locked
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
@@ -137,10 +144,12 @@ jobs:
         uses: "actions-rust-lang/setup-rust-toolchain@v1"
         with:
           target: "aarch64-unknown-linux-gnu"
+          rustflags: ""
       - name: "Setup cargo-packager"
         shell: "bash"
         run: |
-          cargo install cargo-packager --locked
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall cargo-packager --locked
       - name: "Load Config"
         run: |
           echo "[package.metadata.packager]" >> Cargo.toml
