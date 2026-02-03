@@ -1,0 +1,4 @@
+beforePackagingCommand = "cargo build --target x86_64-pc-windows-gnu --release"
+targetTriple = "x86_64-pc-windows-gnu"
+icons = ["icon.png"]
+formats = ["wix"]

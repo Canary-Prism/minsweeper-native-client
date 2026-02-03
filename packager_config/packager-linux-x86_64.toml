@@ -1,0 +1,4 @@
+beforePackagingCommand = "cargo build --target x86_64-unknown-linux-gnu --release"
+targetTriple = "x86_64-unknown-linux-gnu"
+icons = ["icon.png"]
+formats = ["appimage"]

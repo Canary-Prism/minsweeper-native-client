@@ -1,0 +1,159 @@
+# v1.0.0
+name: "cargo-packager build"
+run-name: "cargo-packager build for ${{ github.event.release.tag_name }}"
+
+on:
+  release:
+    types: [ published ]
+jobs:
+  build_mac_aarch64:
+    name: "cargo-packager build for mac aarch64"
+    runs-on: "macos-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+      - name: "Setup Rust"
+        uses: "actions-rust-lang/setup-rust-toolchain@v1"
+        with:
+          target: "aarch64-apple-darwin"
+      - name: "Setup cargo-packager"
+        shell: "bash"
+        run: |
+          cargo install cargo-packager --locked
+      - name: "Load Config"
+        run: |
+          echo "[package.metadata.packager]" >> Cargo.toml
+          cat packager_config/packager-mac-aarch64.toml >> Cargo.toml
+      - name: "cargo-package mac"
+        shell: "bash"
+        run: |
+          cargo packager --release
+          mkdir package
+          mv "$(find target/aarch64-apple-darwin/release -maxdepth 1 -type f -name "*.dmg")" package
+      - name: "Upload Artifact to Release"
+        uses: "softprops/action-gh-release@v2"
+        if: "github.ref_type == 'tag'"
+        with:
+          files: "package/*"
+          token: "${{ secrets.TOKEN }}"
+  build_mac_x86_64:
+    name: "cargo-packager build for mac x86_64"
+    runs-on: "macos-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+      - name: "Setup Rust"
+        uses: "actions-rust-lang/setup-rust-toolchain@v1"
+        with:
+          target: "x86_64-apple-darwin"
+      - name: "Setup cargo-packager"
+        shell: "bash"
+        run: |
+          cargo install cargo-packager --locked
+      - name: "Load Config"
+        run: |
+          echo "[package.metadata.packager]" >> Cargo.toml
+          cat packager_config/packager-mac-x86_64.toml >> Cargo.toml
+      - name: "cargo-package mac"
+        shell: "bash"
+        run: |
+          cargo packager --release
+          mkdir package
+          mv "$(find target/x86_64-apple-darwin/release -maxdepth 1 -type f -name "*.dmg")" package
+      - name: "Upload Artifact to Release"
+        uses: "softprops/action-gh-release@v2"
+        if: "github.ref_type == 'tag'"
+        with:
+          files: "package/*"
+          token: "${{ secrets.TOKEN }}"
+  build_windows:
+    name: "cargo-packager build for windows"
+    runs-on: "windows-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+      - name: "Setup Rust"
+        uses: "actions-rust-lang/setup-rust-toolchain@v1"
+        with:
+          target: "x86_64-pc-windows-gnu"
+      - name: "Setup cargo-packager"
+        shell: "bash"
+        run: |
+          cargo install cargo-packager --locked
+      - name: "Load Config"
+        run: |
+          echo "[package.metadata.packager]" >> Cargo.toml
+          cat packager_config/packager-windows-x86_64.toml >> Cargo.toml
+      - name: "cargo-package windows"
+        shell: "bash"
+        run: |
+          cargo packager --release
+          mkdir package
+          mv "$(find target/x86_64-pc-windows-gnu/release -maxdepth 1 -type f -name "*.msi")" package
+      - name: "Upload Artifact to Release"
+        uses: "softprops/action-gh-release@v2"
+        if: "github.ref_type == 'tag'"
+        with:
+          files: "package/*"
+          token: "${{ secrets.TOKEN }}"
+  build_linux_x86_64:
+    name: "cargo-packager build for linux x86_64"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+      - name: "Setup Rust"
+        uses: "actions-rust-lang/setup-rust-toolchain@v1"
+        with:
+          target: "x86_64-unknown-linux-gnu"
+      - name: "Setup cargo-packager"
+        shell: "bash"
+        run: |
+          cargo install cargo-packager --locked
+      - name: "Load Config"
+        run: |
+          echo "[package.metadata.packager]" >> Cargo.toml
+          cat packager_config/packager-linux-x86_64.toml >> Cargo.toml
+      - name: "cargo-package linux"
+        shell: "bash"
+        run: |
+          cargo packager --release
+          mkdir package
+          ls target/x86_64-unknown-linux-gnu/release
+          mv "$(find target/x86_64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.appimage")" package
+      - name: "Upload Artifact to Release"
+        uses: "softprops/action-gh-release@v2"
+        if: "github.ref_type == 'tag'"
+        with:
+          files: "package/*"
+          token: "${{ secrets.TOKEN }}"
+  build_linux_aarch64:
+    name: "cargo-packager build for linux aarch64"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v5"
+      - name: "Setup Rust"
+        uses: "actions-rust-lang/setup-rust-toolchain@v1"
+        with:
+          target: "aarch64-unknown-linux-gnu"
+      - name: "Setup cargo-packager"
+        shell: "bash"
+        run: |
+          cargo install cargo-packager --locked
+      - name: "Load Config"
+        run: |
+          echo "[package.metadata.packager]" >> Cargo.toml
+          cat packager_config/packager-linux-aarch64.toml >> Cargo.toml
+      - name: "cargo-package linux"
+        shell: "bash"
+        run: |
+          cargo packager --release
+          mkdir package
+          mv "$(find target/aarch64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.appimage")" package
+      - name: "Upload Artifact to Release"
+        uses: "softprops/action-gh-release@v2"
+        if: "github.ref_type == 'tag'"
+        with:
+          files: "package/*"
+          token: "${{ secrets.TOKEN }}"

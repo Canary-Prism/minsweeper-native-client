@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="cargo-packager">
+          <value>
+            <SchemaInfo>
+              <option name="generatedName" value="New Schema" />
+              <option name="name" value="cargo-packager" />
+              <option name="relativePathToSchema" value="https://raw.githubusercontent.com/crabnebula-dev/cargo-packager/6e340e48a9f667513ae844dda13f76467f17dd72/crates/packager/schema.json" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="path" value="packager_mac.json" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager.json" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager_mac_arm64.json" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager_mac_arm64.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager_mac.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager-mac-aarch64.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager-windows-x86_64.toml" />
+                  </Item>
+                  <Item>
+                    <option name="path" value="packager_config/packager-linux-x86_64.toml" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>

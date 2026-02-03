@@ -1,0 +1,4 @@
+beforePackagingCommand = "cargo build --target aarch64-apple-darwin --release"
+targetTriple = "aarch64-apple-darwin"
+icons = ["icon.png"]
+formats = ["dmg"]
