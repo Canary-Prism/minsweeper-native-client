@@ -127,7 +127,7 @@ jobs:
           cargo packager --release
           mkdir package
           ls target/x86_64-unknown-linux-gnu/release
-          mv "$(find target/x86_64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.appimage")" package
+          mv "$(find target/x86_64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.AppImage")" package
       - name: "Upload Artifact to Release"
         uses: "softprops/action-gh-release@v2"
         if: "github.ref_type == 'tag'"
@@ -136,7 +136,7 @@ jobs:
           token: "${{ secrets.TOKEN }}"
   build_linux_aarch64:
     name: "cargo-packager build for linux aarch64"
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-24.04-arm"
     steps:
       - name: "Checkout"
         uses: "actions/checkout@v5"
@@ -159,7 +159,7 @@ jobs:
         run: |
           cargo packager --release
           mkdir package
-          mv "$(find target/aarch64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.appimage")" package
+          mv "$(find target/aarch64-unknown-linux-gnu/release -maxdepth 1 -type f -name "*.AppImage")" package
       - name: "Upload Artifact to Release"
         uses: "softprops/action-gh-release@v2"
         if: "github.ref_type == 'tag'"
